@@ -5,6 +5,9 @@ import { ThemeProvider } from '@/hooks/useTheme'
 export const metadata: Metadata = {
   title: 'iQ2 TLS',
   description: 'iQ2 Thread Locked Stitches - Operations Management System',
+   icons: {
+    icon: '/favicon.ico',   // 👈 ADD THIS
+  },
 }
 
 export default function RootLayout({
