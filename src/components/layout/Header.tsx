@@ -44,7 +44,6 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
   const userRole = (user?.role as string) || 'Super Admin'
   const initials = userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -61,46 +60,26 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
   }
 
   return (
-    <div style={{
-      height: 56,
-      flexShrink: 0,
-      backgroundColor: 'var(--color-header-bg)',
-      borderBottom: '1px solid var(--color-header-border)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: isMobile ? '0 12px' : '0 20px',
-      gap: 12,
-    }}>
-      {/* Left: hamburger (mobile) + Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className={`h-14 shrink-0 bg-header border-b border-header-line flex items-center justify-between gap-3 ${isMobile ? 'px-3' : 'px-5'}`}>
+      {/* Left */}
+      <div className="flex items-center gap-2.5">
         {isMobile && (
-          <button
-            onClick={onMenuToggle}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: 4, color: '#4A5568', display: 'flex', alignItems: 'center',
-              flexShrink: 0,
-            }}
-          >
+          <button onClick={onMenuToggle} className="bg-transparent border-none cursor-pointer p-1 text-t-body flex items-center shrink-0">
             <Menu size={20} />
           </button>
         )}
         <div>
-          <h1 style={{ margin: 0, fontSize: isMobile ? 13 : 15, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.2 }}>
+          <h1 className={`m-0 font-bold text-t-primary leading-tight ${isMobile ? 'text-[13px]' : 'text-[15px]'}`}>
             Operations Dashboard
           </h1>
-          {!isMobile && (
-            <p style={{ margin: 0, fontSize: 11, color: '#A0AEC0' }}>Line Real-time monitoring</p>
-          )}
+          {!isMobile && <p className="m-0 text-[11px] text-t-lighter">Line Real-time monitoring</p>}
         </div>
       </div>
 
-      {/* Right: meta + icons + user */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16 }}>
-        {/* Date / time / shift — hide on mobile */}
+      {/* Right */}
+      <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
         {!isMobile && (
-          <span style={{ fontSize: 12, color: 'var(--color-text-light)', whiteSpace: 'nowrap' }}>
+          <span className="text-xs text-t-light whitespace-nowrap">
             {dateStr} &nbsp;|&nbsp; {timeStr} &nbsp;|&nbsp; Shift: {shift}
           </span>
         )}
@@ -109,92 +88,52 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
         <button
           onClick={toggleTheme}
           title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer', padding: 4,
-            color: isDark ? '#F6AD55' : '#718096', display: 'flex', alignItems: 'center',
-            transition: 'color 0.2s',
-          }}
+          className={`bg-transparent border-none cursor-pointer p-1 flex items-center transition-colors ${isDark ? 'text-orange-300' : 'text-t-body hover:text-t-primary'}`}
         >
           {isDark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
-        {/* Other icon buttons */}
+        {/* Icon buttons */}
         {(isMobile ? [Bell] : [Lock, Settings, Bell]).map((Icon, i) => (
-          <button
-            key={i}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
-              color: 'var(--color-text-light)', display: 'flex', alignItems: 'center',
-            }}
-          >
+          <button key={i} className="bg-transparent border-none cursor-pointer p-1 text-t-body hover:text-t-primary flex items-center transition-colors">
             <Icon size={17} />
           </button>
         ))}
 
         {/* Divider */}
-        <div style={{ width: 1, height: 24, background: 'var(--color-header-border)' }} />
+        <div className="w-px h-6 bg-header-line" />
 
-        {/* User with dropdown */}
-        <div ref={dropdownRef} style={{ position: 'relative' }}>
+        {/* User dropdown */}
+        <div ref={dropdownRef} className="relative">
           <div
             onClick={() => setDropdownOpen(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 8, cursor: 'pointer' }}
+            className={`flex items-center cursor-pointer ${isMobile ? 'gap-1.5' : 'gap-2'}`}
           >
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              backgroundColor: '#2DB3A0',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{initials}</span>
+            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center shrink-0">
+              <span className="text-white text-xs font-semibold">{initials}</span>
             </div>
             {!isMobile && (
               <div>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', lineHeight: 1.2 }}>{userName}</p>
-                <p style={{ margin: 0, fontSize: 10, color: 'var(--color-text-lighter)' }}>{userRole}</p>
+                <p className="m-0 text-xs font-semibold text-t-secondary leading-tight">{userName}</p>
+                <p className="m-0 text-[10px] text-t-lighter">{userRole}</p>
               </div>
             )}
-            <ChevronDown size={14} color="#A0AEC0" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+            <ChevronDown
+              size={14}
+              className={`text-t-lighter transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
+            />
           </div>
 
-          {/* Dropdown */}
+          {/* Dropdown menu */}
           {dropdownOpen && (
-            <div style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              right: 0,
-              backgroundColor: 'var(--color-dropdown-bg)',
-              borderRadius: 8,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-              border: '1px solid var(--color-border)',
-              minWidth: 180,
-              zIndex: 200,
-              overflow: 'hidden',
-            }}>
-              {/* User info */}
-              <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--color-table-border)' }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>{userName}</p>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--color-text-lighter)' }}>{userRole}</p>
+            <div className="absolute top-[calc(100%+8px)] right-0 bg-dropdown rounded-lg shadow-lg border border-t-border min-w-[180px] z-[200] overflow-hidden">
+              <div className="px-3.5 py-3 border-b border-table-line">
+                <p className="m-0 text-[13px] font-semibold text-t-secondary">{userName}</p>
+                <p className="m-0 mt-0.5 text-[11px] text-t-lighter">{userRole}</p>
               </div>
-              {/* Logout */}
               <button
                 onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: 13,
-                  color: '#E53E3E',
-                  fontFamily: 'inherit',
-                  fontWeight: 500,
-                }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FFF5F5')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                className="w-full px-3.5 py-2.5 bg-transparent border-none cursor-pointer flex items-center gap-2 text-[13px] text-red-500 font-medium font-inherit hover:bg-red-50 transition-colors"
               >
                 <LogOut size={14} />
                 Logout

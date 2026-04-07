@@ -4,10 +4,6 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { ChevronDown, ChevronRight, LayoutDashboard, X } from 'lucide-react'
-import { useTheme } from '@/hooks/useTheme'
-
-const TEAL      = '#2DB3A0'
-const ACTIVE_BG = 'rgba(45,179,160,0.12)'
 
 const navSections = [
   {
@@ -65,13 +61,6 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
-
-  const BG      = isDark ? '#141620' : 'rgb(237, 242, 247)'
-  const NAVY    = isDark ? '#CBD5E0' : '#1B3A6B'
-  const MUTED   = isDark ? '#8B95A5' : '#718096'
-  const SECTION = isDark ? '#6B7688' : '#A0AEC0'
 
   const [open, setOpen] = useState<Record<string, boolean>>(
     Object.fromEntries(navSections.map(s => [s.title, s.defaultOpen ?? false]))
@@ -84,144 +73,79 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
     if (isMobile) onClose()
   }
 
-  const sidebarStyle: React.CSSProperties = isMobile
-    ? {
-        position: 'fixed',
-        top: 0, left: 0,
-        height: '100%',
-        width: 220,
-        zIndex: 50,
-        transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.25s ease',
-        background: BG,
-        backgroundColor: BG,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        boxShadow: isOpen ? '4px 0 20px rgba(0,0,0,0.15)' : 'none',
-        borderRight: '1px solid var(--color-sidebar-border)',
-      }
-    : {
-        width: 200,
-        minWidth: 200,
-        maxWidth: 200,
-        height: '100%',
-        background: BG,
-        backgroundColor: BG,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        flexShrink: 0,
-        borderRight: '1px solid var(--color-sidebar-border)',
-      }
+  const mobileClass = isMobile
+    ? `fixed top-0 left-0 h-full w-[220px] z-50 transition-transform duration-300 ease-in-out
+       ${isOpen ? 'translate-x-0 shadow-[4px_0_20px_rgba(0,0,0,0.15)]' : '-translate-x-full'}`
+    : 'w-[200px] min-w-[200px] max-w-[200px] h-full shrink-0'
 
   return (
-    <div id="iq-sidebar" style={sidebarStyle}>
+    <div
+      id="iq-sidebar"
+      className={`flex flex-col overflow-hidden bg-sidebar border-r border-sidebar-line transition-colors duration-300 ${mobileClass}`}
+    >
 
       {/* Logo */}
-      <div style={{
-        padding: '14px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        borderBottom: '1px solid var(--color-sidebar-border)',
-        flexShrink: 0,
-        background: BG,
-        backgroundColor: BG,
-        justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Image src="/logo.png" alt="" width={26} height={26} />
-          <span style={{ color: NAVY, fontWeight: 700, fontSize: 14, letterSpacing: '0.04em' }}>
-            iQ2 TLS
-          </span>
+      <div className="px-4 h-14 flex items-center gap-2 shrink-0 justify-between border-b border-sidebar-line">
+        <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="" width={28} height={28} />
+          <span className="text-brand font-bold text-[15px] tracking-wide">iQ2 TLS</span>
         </div>
         {isMobile && (
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: MUTED, display: 'flex', alignItems: 'center' }}
-          >
+          <button onClick={onClose} className="bg-transparent border-none cursor-pointer p-1 flex items-center text-t-lighter">
             <X size={16} />
           </button>
         )}
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '6px 0', background: BG, backgroundColor: BG }}>
+      <nav className="flex-1 overflow-y-auto py-2 bg-sidebar transition-colors duration-300">
 
         {/* Dashboard */}
         <div
           onClick={() => handleNav('/dashboard')}
-          style={{
-            margin: '4px 10px',
-            padding: '8px 12px',
-            borderRadius: 6,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            backgroundColor: pathname === '/dashboard' ? TEAL : 'transparent',
-            cursor: 'pointer',
-          }}
+          className={`mx-2.5 my-1 px-3 py-2 rounded-lg flex items-center gap-2.5 cursor-pointer transition-colors
+            ${pathname === '/dashboard' ? 'bg-accent' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
         >
-          <LayoutDashboard size={14} color={pathname === '/dashboard' ? '#fff' : NAVY} />
-          <span style={{ color: pathname === '/dashboard' ? '#fff' : NAVY, fontSize: 13, fontWeight: 500 }}>
+          <LayoutDashboard size={16} className={pathname === '/dashboard' ? 'text-white' : 'text-brand'} />
+          <span className={`text-[13px] font-semibold ${pathname === '/dashboard' ? 'text-white' : 'text-brand'}`}>
             Dashboard
           </span>
         </div>
 
         {/* Sections */}
         {navSections.map(section => (
-          <div key={section.title} style={{ marginTop: 4, background: BG, backgroundColor: BG }}>
-
+          <div key={section.title} className="mt-2">
             <button
               onClick={() => setOpen(p => ({ ...p, [section.title]: !p[section.title] }))}
-              style={{
-                width: '100%',
-                padding: '7px 16px 4px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
+              className="w-full px-4 pt-2 pb-1 bg-transparent border-none cursor-pointer flex items-center justify-between"
             >
-              <span style={{ color: SECTION, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em' }}>
+              <span className="text-t-lighter text-[10px] font-bold tracking-[0.1em]">
                 {section.title}
               </span>
               {open[section.title]
-                ? <ChevronDown size={11} color={SECTION} />
-                : <ChevronRight size={11} color={SECTION} />}
+                ? <ChevronDown size={12} className="text-t-lighter" />
+                : <ChevronRight size={12} className="text-t-lighter" />}
             </button>
 
-            {open[section.title] && section.items.map(item => (
-              <button
-                key={item.label}
-                onClick={() => handleNav(item.route)}
-                style={{
-                  width: '100%',
-                  padding: '7px 12px 7px 22px',
-                  background: isActive(item.route) ? ACTIVE_BG : 'none',
-                  border: 'none',
-                  borderLeft: isActive(item.route) ? `3px solid ${TEAL}` : '3px solid transparent',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                }}
-              >
-                <span style={{ color: isActive(item.route) ? TEAL : MUTED, fontSize: 11 }}>&#8226;</span>
-                <span style={{
-                  fontSize: 12.5,
-                  color: isActive(item.route) ? TEAL : NAVY,
-                  fontWeight: isActive(item.route) ? 600 : 400,
-                }}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
+            {open[section.title] && section.items.map(item => {
+              const active = isActive(item.route)
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => handleNav(item.route)}
+                  className={`w-full py-[7px] pr-3 pl-5 bg-transparent border-none cursor-pointer
+                    flex items-center gap-2 text-left font-inherit transition-colors
+                    border-l-[3px] ${active
+                      ? 'border-l-accent bg-accent/[0.08]'
+                      : 'border-l-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
+                >
+                  <span className={`text-[11px] ${active ? 'text-accent' : 'text-t-lighter'}`}>&#8226;</span>
+                  <span className={`text-[13px] ${active ? 'text-accent font-semibold' : 'text-t-secondary font-normal'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         ))}
       </nav>

@@ -2,14 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { Search, Download, Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { api } from '@/services/api'
+import { Pencil, Trash2 } from 'lucide-react'
+import { apiCall } from '@/services/apiClient'
 import Toast, { type ToastData } from '@/components/ui/Toast'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+import PageHeader from '@/components/ui/PageHeader'
+import DataTable from '@/components/ui/DataTable'
+import Toolbar from '@/components/ui/Toolbar'
+import Modal from '@/components/ui/Modal'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import FormInput from '@/components/ui/FormInput'
+import FormSelect from '@/components/ui/FormSelect'
+import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 
 // ── Types ────────────────────────────────────────────
-interface CompanyOption { id: number; company_name: string }
-interface BranchOption { id: number; company_id: number; branch_name: string }
-
 interface Zone {
   id: number
   company_id: number
@@ -17,156 +23,174 @@ interface Zone {
   zone_name: string
   zone_code: string
   status: number
-  is_active: number
   company?: { id: number; company_name: string; company_code: string }
   branch?: { id: number; branch_name: string; branch_code: string }
 }
 
+interface CompanyOption { id: number; company_name: string }
+interface BranchOption { id: number; company_id: number; branch_name: string }
+
+interface FormErrors {
+  company_id?: string
+  branch_id?: string
+  zone_name?: string
+}
+
+type FormField = 'company_id' | 'branch_id' | 'zone_name'
+type Touched = Partial<Record<FormField, boolean>>
+
+const rules: ValidationRules<FormField> = {
+  company_id: { required: 'Company is required' },
+  branch_id: { required: 'Branch is required' },
+  zone_name: {
+    required: 'Zone name is required',
+    minLength: { value: 2, message: 'Minimum 2 characters' },
+    maxLength: { value: 50, message: 'Maximum 50 characters' },
+  },
+}
+
 // ── Add / Edit Modal ─────────────────────────────────
-interface ZoneModalProps {
+function ZoneModal({
+  zone, companies, allBranches, onClose, onSaved,
+}: {
   zone: Zone | null
   companies: CompanyOption[]
   allBranches: BranchOption[]
   onClose: () => void
   onSaved: (msg: string) => void
-}
-
-function ZoneModal({ zone, companies, allBranches, onClose, onSaved }: ZoneModalProps) {
+}) {
   const isEdit = !!zone
-  const [form, setForm] = useState({
-    company_id: zone?.company_id?.toString() ?? '',
-    branch_id: zone?.branch_id?.toString() ?? '',
-    zone_name: zone?.zone_name ?? '',
-  })
+  const [companyId, setCompanyId] = useState(zone?.company_id?.toString() ?? '')
+  const [branchId, setBranchId] = useState(zone?.branch_id?.toString() ?? '')
+  const [zoneName, setZoneName] = useState(zone?.zone_name ?? '')
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [touched, setTouched] = useState<Touched>({})
 
-  const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
+  const filteredBranches = allBranches.filter(b => b.company_id === parseInt(companyId))
 
-  // Filter branches by selected company
-  const filteredBranches = allBranches.filter(b => b.company_id === parseInt(form.company_id))
-
-  // Reset branch when company changes
   const handleCompanyChange = (val: string) => {
-    setForm(f => ({ ...f, company_id: val, branch_id: '' }))
+    setCompanyId(val)
+    setBranchId('')
+    setTouched(t => ({ ...t, company_id: true }))
+    setErrors(e => ({ ...e, company_id: validateField(val, rules.company_id) }))
+  }
+
+  const handleBranchChange = (val: string) => {
+    setBranchId(val)
+    setTouched(t => ({ ...t, branch_id: true }))
+    setErrors(e => ({ ...e, branch_id: validateField(val, rules.branch_id) }))
+  }
+
+  const handleZoneNameChange = (val: string) => {
+    setZoneName(val)
+    if (touched.zone_name) {
+      setErrors(e => ({ ...e, zone_name: validateField(val, rules.zone_name) }))
+    }
+  }
+
+  const handleBlur = (key: FormField) => {
+    setTouched(t => ({ ...t, [key]: true }))
+    const val = key === 'company_id' ? companyId : key === 'branch_id' ? branchId : zoneName
+    setErrors(e => ({ ...e, [key]: validateField(val, rules[key]) }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const allTouched: Touched = { company_id: true, branch_id: true, zone_name: true }
+    setTouched(allTouched)
+    const formData = { company_id: companyId, branch_id: branchId, zone_name: zoneName }
+    const allErrors = validateAll(formData, rules)
+    setErrors(allErrors)
+    if (hasErrors(allErrors)) return
+
     setSaving(true)
-    setError(null)
     try {
       const payload: Record<string, unknown> = {
-        zone_name: form.zone_name,
-        company_id: form.company_id,
-        branch_id: form.branch_id,
+        zone_name: zoneName,
+        company_id: companyId,
+        branch_id: branchId,
       }
+
       if (isEdit) {
         payload.id = zone.id
-        const res = await api.post('/zone/update', payload)
-        onSaved(res.data?.message || 'Zone updated successfully')
+        const res = await apiCall<{ message?: string }>('/zone/update', { payload })
+        onSaved(res.message || 'Zone updated successfully')
       } else {
-        const res = await api.post('/zone/create', payload)
-        onSaved(res.data?.message || 'Zone created successfully')
+        const res = await apiCall<{ message?: string }>('/zone/create', { payload })
+        onSaved(res.message || 'Zone created successfully')
       }
       onClose()
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string } } }
-      setError(axiosErr.response?.data?.message || 'Failed to save zone')
+    } catch {
+      setErrors({ zone_name: 'Failed to save zone. Please try again.' })
     } finally {
       setSaving(false)
     }
   }
 
-  const inp: React.CSSProperties = {
-    width: '100%', height: 34, padding: '0 10px', fontSize: 12.5,
-    fontFamily: 'inherit', color: '#2D3748', background: '#fff',
-    border: '1px solid #CBD5E0', borderRadius: 5, outline: 'none', boxSizing: 'border-box',
-  }
-  const sel: React.CSSProperties = { ...inp, cursor: 'pointer' }
-  const lbl: React.CSSProperties = { display: 'block', fontSize: 11.5, fontWeight: 500, color: '#4A5568', marginBottom: 4 }
-
   return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 100 }} />
-      <div style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        zIndex: 101, backgroundColor: '#fff', borderRadius: 10,
-        width: 480, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
-        display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #EDF2F7', flexShrink: 0 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1A202C' }}>{isEdit ? 'Edit Zone' : 'Add Zone'}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0AEC0', padding: 4, display: 'flex', alignItems: 'center' }}>
-            <X size={18} />
-          </button>
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-          {error && (
-            <div style={{ marginBottom: 12, padding: '8px 12px', backgroundColor: '#FED7D7', border: '1px solid #FEB2B2', borderRadius: 5, fontSize: 12, color: '#9B2C2C' }}>
-              {error}
-            </div>
-          )}
-          <form id="zone-form" onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={lbl}>Company</label>
-              <select style={sel} value={form.company_id} onChange={e => handleCompanyChange(e.target.value)} required>
-                <option value="">Select company</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.company_name}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={lbl}>Branch</label>
-              <select style={sel} value={form.branch_id} onChange={e => set('branch_id', e.target.value)} required disabled={!form.company_id}>
-                <option value="">{form.company_id ? 'Select branch' : 'Select company first'}</option>
-                {filteredBranches.map(b => (
-                  <option key={b.id} value={b.id}>{b.branch_name}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={lbl}>Zone Name</label>
-              <input style={inp} placeholder="Enter zone name" value={form.zone_name} onChange={e => set('zone_name', e.target.value)} required />
-            </div>
-          </form>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 20px', borderTop: '1px solid #EDF2F7', flexShrink: 0 }}>
-          <button type="button" onClick={onClose} style={{ height: 34, padding: '0 18px', background: '#fff', border: '1px solid #CBD5E0', borderRadius: 5, fontSize: 13, color: '#4A5568', cursor: 'pointer', fontFamily: 'inherit' }}>
+    <Modal
+      title={isEdit ? 'Edit Zone' : 'Add Zone'}
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-[34px] px-[18px] bg-card border border-input-line rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit"
+          >
             Cancel
           </button>
-          <button type="submit" form="zone-form" disabled={saving} style={{ height: 34, padding: '0 18px', background: '#2DB3A0', border: 'none', borderRadius: 5, fontSize: 13, color: '#fff', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
+          <button
+            type="submit"
+            form="zone-form"
+            disabled={saving}
+            className="h-[34px] px-[18px] bg-[#2DB3A0] hover:bg-[#26A090] border-none rounded-[5px] text-[13px] text-white font-semibold cursor-pointer font-inherit disabled:opacity-70 transition-colors"
+          >
             {saving ? 'Saving...' : isEdit ? 'Update Zone' : 'Add Zone'}
           </button>
-        </div>
-      </div>
-    </>
-  )
-}
+        </>
+      }
+    >
+      <form id="zone-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <FormSelect
+          label="Company"
+          value={companyId}
+          onChange={e => handleCompanyChange(e.target.value)}
+          onBlur={() => handleBlur('company_id')}
+          options={companies.map(c => ({ value: c.id, label: c.company_name }))}
+          placeholder="Select company"
+          error={errors.company_id}
+          touched={touched.company_id}
+          required
+        />
 
-// ── Delete Confirm Modal ─────────────────────────────
-function DeleteConfirmModal({ name, onConfirm, onClose, deleting }: { name: string; onConfirm: () => void; onClose: () => void; deleting: boolean }) {
-  return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 100 }} />
-      <div style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        zIndex: 101, backgroundColor: '#fff', borderRadius: 10,
-        width: 380, maxWidth: 'calc(100vw - 32px)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', padding: '24px 20px',
-      }}>
-        <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: '#1A202C' }}>Delete Zone</h3>
-        <p style={{ margin: '0 0 20px', fontSize: 13, color: '#718096' }}>
-          Are you sure you want to delete <strong>{name}</strong>? This action cannot be undone.
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button onClick={onClose} disabled={deleting} style={{ height: 34, padding: '0 18px', background: '#fff', border: '1px solid #CBD5E0', borderRadius: 5, fontSize: 13, color: '#4A5568', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-          <button onClick={onConfirm} disabled={deleting} style={{ height: 34, padding: '0 18px', background: '#E74C3C', border: 'none', borderRadius: 5, fontSize: 13, color: '#fff', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: deleting ? 0.7 : 1 }}>
-            {deleting ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
-      </div>
-    </>
+        <FormSelect
+          label="Branch"
+          value={branchId}
+          onChange={e => handleBranchChange(e.target.value)}
+          onBlur={() => handleBlur('branch_id')}
+          options={filteredBranches.map(b => ({ value: b.id, label: b.branch_name }))}
+          placeholder={companyId ? 'Select branch' : 'Select company first'}
+          disabled={!companyId}
+          error={errors.branch_id}
+          touched={touched.branch_id}
+          required
+        />
+
+        <FormInput
+          label="Zone Name"
+          value={zoneName}
+          onChange={e => handleZoneNameChange(e.target.value)}
+          onBlur={() => handleBlur('zone_name')}
+          placeholder="Enter zone name"
+          error={errors.zone_name}
+          touched={touched.zone_name}
+          required
+        />
+      </form>
+    </Modal>
   )
 }
 
@@ -187,37 +211,35 @@ export default function ZoneMasterPage() {
   const [deleteTarget, setDeleteTarget] = useState<Zone | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
 
-  // Fetch companies + branches for dropdowns
+  // Fetch dropdown data
   useEffect(() => {
-    api.get('/company/companyList').then(res => {
-      const data = res.data?.data
-      setCompanies(data?.companies ?? data?.rows ?? (Array.isArray(data) ? data : []))
-    }).catch(() => {})
+    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET' })
+      .then(res => setCompanies(res.data?.companies ?? []))
+      .catch(() => {})
 
-    api.get('/branch/branchList').then(res => {
-      const data = res.data?.data
-      setAllBranches(data?.branches ?? data?.rows ?? (Array.isArray(data) ? data : []))
-    }).catch(() => {})
+    apiCall<{ data?: { branches?: BranchOption[] } }>('/branch/branchList', { method: 'GET' })
+      .then(res => setAllBranches(res.data?.branches ?? []))
+      .catch(() => {})
   }, [])
 
   const fetchZones = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.get('/zone/zoneList', {
-        params: { search, page },
+      const res = await apiCall<{
+        data?: {
+          zones?: Zone[]
+          pagination?: { total: number; total_pages: number }
+        }
+      }>('/zone/zoneList', {
+        method: 'GET',
+        payload: { search, page: String(page) },
       })
-      const resData = res.data
-      const nested = resData?.data ?? resData
-      const rows: Zone[] = nested?.zones ?? nested?.rows ?? (Array.isArray(nested) ? nested : [])
-      const pagination = nested?.pagination
-      const count = pagination?.total ?? rows.length
-      const pages = pagination?.total_pages ?? 1
 
-      setZones(rows)
-      setTotalCount(count)
-      setTotalPages(pages)
-    } catch (err) {
-      console.error('Zone list error:', err)
+      const data = res.data
+      setZones(data?.zones ?? [])
+      setTotalCount(data?.pagination?.total ?? 0)
+      setTotalPages(data?.pagination?.total_pages ?? 1)
+    } catch {
       setZones([])
     } finally {
       setLoading(false)
@@ -232,13 +254,12 @@ export default function ZoneMasterPage() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      const res = await api.post('/zone/delete', { id: deleteTarget.id })
-      setToast({ message: res.data?.message || 'Zone deleted successfully', type: 'success' })
+      const res = await apiCall<{ message?: string }>('/zone/delete', { payload: { id: deleteTarget.id } })
+      setToast({ message: res.message || 'Zone deleted successfully', type: 'success' })
       setDeleteTarget(null)
       fetchZones()
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string } } }
-      setToast({ message: axiosErr.response?.data?.message || 'Failed to delete zone', type: 'error' })
+    } catch {
+      setToast({ message: 'Failed to delete zone', type: 'error' })
     } finally {
       setDeleting(false)
     }
@@ -248,6 +269,80 @@ export default function ZoneMasterPage() {
     setToast({ message: msg, type: 'success' })
     fetchZones()
   }
+
+  const columns = [
+    {
+      key: '#',
+      header: '#',
+      render: (_: Zone, i: number) => (
+        <span className="text-t-lighter text-xs">{(page - 1) * 30 + i + 1}</span>
+      ),
+    },
+    {
+      key: 'zone_name',
+      header: 'Zone Name',
+      render: (row: Zone) => (
+        <span className="text-[#2DB3A0] font-semibold">{row.zone_name}</span>
+      ),
+    },
+    {
+      key: 'zone_code',
+      header: 'Zone Code',
+      render: (row: Zone) => (
+        <span className="font-mono text-xs text-t-body">{row.zone_code}</span>
+      ),
+    },
+    {
+      key: 'company_name',
+      header: 'Company Name',
+      render: (row: Zone) => (
+        <span className="text-t-body">{row.company?.company_name ?? '\u2014'}</span>
+      ),
+    },
+    {
+      key: 'company_code',
+      header: 'Company Code',
+      render: (row: Zone) => (
+        <span className="font-mono text-xs text-t-body">{row.company?.company_code ?? '\u2014'}</span>
+      ),
+    },
+    {
+      key: 'branch_name',
+      header: 'Branch Name',
+      render: (row: Zone) => (
+        <span className="text-t-body">{row.branch?.branch_name ?? '\u2014'}</span>
+      ),
+    },
+    {
+      key: 'branch_code',
+      header: 'Branch Code',
+      render: (row: Zone) => (
+        <span className="font-mono text-xs text-t-body">{row.branch?.branch_code ?? '\u2014'}</span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (row: Zone) => (
+        <div className="flex gap-1.5 items-center">
+          <button
+            onClick={() => { setEditZone(row); setShowModal(true) }}
+            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-[#2DB3A0] transition-colors flex"
+            title="Edit"
+          >
+            <Pencil size={13} />
+          </button>
+          <button
+            onClick={() => setDeleteTarget(row)}
+            className="bg-transparent border-none cursor-pointer p-1 text-[#FC8181] hover:text-[#E53E3E] transition-colors flex"
+            title="Delete"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <AppLayout>
@@ -262,107 +357,41 @@ export default function ZoneMasterPage() {
           onSaved={handleSaved}
         />
       )}
+
       {deleteTarget && (
-        <DeleteConfirmModal
-          name={deleteTarget.zone_name}
+        <ConfirmDialog
+          title="Delete Zone"
+          message={<>Are you sure you want to delete <strong>{deleteTarget.zone_name}</strong>? This action cannot be undone.</>}
+          confirmLabel="Delete"
           onConfirm={handleDelete}
           onClose={() => setDeleteTarget(null)}
-          deleting={deleting}
+          loading={deleting}
+          variant="danger"
         />
       )}
 
-      {/* Breadcrumb */}
-      <div style={{ marginBottom: 4 }}>
-        <span style={{ fontSize: 12, color: '#A0AEC0' }}>Master</span>
-        <span style={{ fontSize: 12, color: '#A0AEC0', margin: '0 6px' }}>&rsaquo;</span>
-        <span style={{ fontSize: 12, color: '#2D3748', fontWeight: 500 }}>Zone Master</span>
-      </div>
+      <Breadcrumb items={[{ label: 'Master' }, { label: 'Zone Master', active: true }]} />
+      <PageHeader title="Zone Master" description="Manage production zones within company branches." />
 
-      <div style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: '0 0 3px', fontSize: 17, fontWeight: 700, color: '#1A202C' }}>Zone Master</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#A0AEC0' }}>Manage production zones within company branches.</p>
-      </div>
+      <Toolbar
+        title="All Zones"
+        search={search}
+        onSearchChange={val => { setSearch(val); setPage(1) }}
+        onAdd={() => { setEditZone(null); setShowModal(true) }}
+        addLabel="Add Zone"
+      />
 
-      <div style={{ backgroundColor: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-        {/* Toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #EDF2F7', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#2D3748' }}>All Zones</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={13} color="#A0AEC0" style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)' }} />
-              <input placeholder="Search" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
-                style={{ height: 32, paddingLeft: 28, paddingRight: 10, fontSize: 12.5, fontFamily: 'inherit', color: '#2D3748', background: '#F7FAFC', border: '1px solid #E2E8F0', borderRadius: 5, outline: 'none', width: 160 }} />
-            </div>
-            <button style={{ height: 32, padding: '0 12px', display: 'flex', alignItems: 'center', gap: 5, background: '#fff', border: '1px solid #CBD5E0', borderRadius: 5, cursor: 'pointer', fontSize: 12.5, color: '#4A5568', fontFamily: 'inherit' }}>
-              <Download size={13} /> Export
-            </button>
-            <button onClick={() => { setEditZone(null); setShowModal(true) }}
-              style={{ height: 32, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 5, background: '#2DB3A0', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 12.5, color: '#fff', fontWeight: 600, fontFamily: 'inherit' }}>
-              <Plus size={13} /> Add Zone
-            </button>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F7FAFC' }}>
-                {['#', 'Zone Name', 'Zone Code', 'Company Name', 'Company Code', 'Branch Name', 'Branch Code', ''].map((h, i) => (
-                  <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11.5, color: '#718096', borderBottom: '1px solid #E2E8F0', whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: '#A0AEC0', fontSize: 13 }}>Loading...</td></tr>
-              ) : zones.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: '#A0AEC0', fontSize: 13 }}>No zones found</td></tr>
-              ) : (
-                zones.map((zone, i) => (
-                  <tr key={zone.id} style={{ borderBottom: '1px solid #EDF2F7', backgroundColor: i % 2 === 0 ? '#fff' : '#FAFBFC' }}>
-                    <td style={{ padding: '11px 14px', color: '#A0AEC0', fontSize: 12 }}>{(page - 1) * 30 + i + 1}</td>
-                    <td style={{ padding: '11px 14px', color: '#2DB3A0', fontWeight: 600 }}>{zone.zone_name}</td>
-                    <td style={{ padding: '11px 14px', color: '#4A5568', fontFamily: 'monospace', fontSize: 12 }}>{zone.zone_code}</td>
-                    <td style={{ padding: '11px 14px', color: '#4A5568' }}>{zone.company?.company_name ?? '—'}</td>
-                    <td style={{ padding: '11px 14px', color: '#4A5568', fontFamily: 'monospace', fontSize: 12 }}>{zone.company?.company_code ?? '—'}</td>
-                    <td style={{ padding: '11px 14px', color: '#4A5568' }}>{zone.branch?.branch_name ?? '—'}</td>
-                    <td style={{ padding: '11px 14px', color: '#4A5568', fontFamily: 'monospace', fontSize: 12 }}>{zone.branch?.branch_code ?? '—'}</td>
-                    <td style={{ padding: '11px 14px' }}>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <button onClick={() => { setEditZone(zone); setShowModal(true) }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#A0AEC0', display: 'flex' }} title="Edit">
-                          <Pencil size={13} />
-                        </button>
-                        <button onClick={() => setDeleteTarget(zone)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#FC8181', display: 'flex' }} title="Delete">
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: '10px 16px', borderTop: '1px solid #EDF2F7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 12, color: '#A0AEC0' }}>{totalCount} zone{totalCount !== 1 ? 's' : ''} found</span>
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
-                style={{ background: 'none', border: '1px solid #E2E8F0', borderRadius: 4, cursor: page <= 1 ? 'not-allowed' : 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center', color: page <= 1 ? '#CBD5E0' : '#718096' }}>
-                <ChevronLeft size={14} />
-              </button>
-              <span style={{ fontSize: 12, color: '#4A5568', minWidth: 60, textAlign: 'center' }}>Page {page} of {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                style={{ background: 'none', border: '1px solid #E2E8F0', borderRadius: 4, cursor: page >= totalPages ? 'not-allowed' : 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center', color: page >= totalPages ? '#CBD5E0' : '#718096' }}>
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={zones}
+        loading={loading}
+        emptyMessage="No zones found"
+        page={page}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        onPageChange={setPage}
+        countLabel="zone"
+      />
     </AppLayout>
   )
 }

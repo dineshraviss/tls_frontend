@@ -1,5 +1,45 @@
 @import "tailwindcss";
 
+/* ── Map CSS variables to Tailwind theme tokens ── */
+/* Usage: bg-card, text-t-primary, border-t-border, etc. */
+@theme {
+  /* Brand */
+  --color-brand: var(--color-primary);
+  --color-accent: #2DB3A0;
+  --color-accent-hover: #26A090;
+
+  /* Backgrounds */
+  --color-page: var(--color-bg);
+  --color-card: var(--color-card-bg);
+  --color-card-alt: var(--color-card-alt);
+  --color-header: var(--color-header-bg);
+  --color-sidebar: var(--color-sidebar-bg);
+  --color-modal: var(--color-modal-bg);
+  --color-dropdown: var(--color-dropdown-bg);
+  --color-input: var(--color-input-bg);
+  --color-table-head: var(--color-table-header);
+
+  /* Text */
+  --color-t-primary: var(--color-text-primary);
+  --color-t-secondary: var(--color-text-secondary);
+  --color-t-body: var(--color-text-body);
+  --color-t-light: var(--color-text-light);
+  --color-t-lighter: var(--color-text-lighter);
+  --color-t-muted: var(--color-text-muted);
+
+  /* Borders */
+  --color-t-border: var(--color-border);
+  --color-header-line: var(--color-header-border);
+  --color-sidebar-line: var(--color-sidebar-border);
+  --color-table-line: var(--color-table-border);
+  --color-input-line: var(--color-input-border);
+
+  /* Status */
+  --color-t-success: var(--color-success);
+  --color-t-warning: var(--color-warning);
+  --color-t-error: var(--color-error);
+}
+
 /* ── Sidebar – must be outside @layer so it wins over Tailwind preflight ── */
 .iq-sidebar {
   width: 200px !important;
@@ -87,7 +127,7 @@
     --color-text-muted: #6B7280;
     --color-header-bg: #FFFFFF;
     --color-header-border: #E2E8F0;
-    --color-sidebar-bg: rgb(237, 242, 247);
+    --color-sidebar-bg: #F8F9FB;
     --color-sidebar-border: #E2E8F0;
     --color-card-bg: #FFFFFF;
     --color-card-alt: #FAFBFC;

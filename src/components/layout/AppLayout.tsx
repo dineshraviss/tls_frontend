@@ -15,22 +15,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      display: 'flex',
-      fontFamily: "'Inter', system-ui, sans-serif",
-      backgroundColor: 'var(--color-bg)',
-      transition: 'background-color 0.3s',
-    }}>
+    <div className="fixed inset-0 flex font-[Inter,system-ui,sans-serif] bg-page transition-colors duration-300">
       {/* Mobile overlay backdrop */}
       {isMobile && sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.45)',
-            zIndex: 40,
-          }}
+          className="fixed inset-0 bg-black/45 z-40"
         />
       )}
 
@@ -40,12 +30,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-bg)' }}>
+      <div className="flex-1 flex flex-col overflow-hidden bg-card">
         <Header
           isMobile={isMobile}
           onMenuToggle={() => setSidebarOpen(s => !s)}
         />
-        <main style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '12px' : '16px 20px' }}>
+        <main className={`flex-1 overflow-y-auto ${isMobile ? 'p-3' : 'px-5 py-4'}`}>
           {children}
         </main>
       </div>

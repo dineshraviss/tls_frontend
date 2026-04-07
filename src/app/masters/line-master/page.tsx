@@ -1,209 +1,533 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { Search, Download, Plus, X, MoreVertical } from 'lucide-react'
+import { Pencil, Trash2, Plus, Minus } from 'lucide-react'
+import { apiCall } from '@/services/apiClient'
+import Toast, { type ToastData } from '@/components/ui/Toast'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+import PageHeader from '@/components/ui/PageHeader'
+import DataTable from '@/components/ui/DataTable'
+import Toolbar from '@/components/ui/Toolbar'
+import Modal from '@/components/ui/Modal'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import FormInput from '@/components/ui/FormInput'
+import FormSelect from '@/components/ui/FormSelect'
+import Badge from '@/components/ui/Badge'
+import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 
-interface LineSlot { start: string; end: string }
-interface LineEntry {
-  id: number
-  zone: string
-  line: string
-  slots: LineSlot[] // 5 slots
+// ── Types ────────────────────────────────────────────
+interface Slot {
+  id?: number
+  slot_name: string
+  start: string
+  end: string
 }
 
-const DEFAULT_SLOT: LineSlot = { start: '9:00 AM', end: '5:00 PM' }
+interface Line {
+  id: number
+  uuid: string
+  zone_id: number
+  branch_id: number
+  line_name: string
+  status: number
+  slots: Slot[]
+  zone?: {
+    id: number
+    zone_name: string
+    zone_code: string
+    company_id: number
+    company?: { id: number; company_name: string; company_code: string }
+    branch?: { id: number; branch_name: string; branch_code: string }
+  }
+  branch?: { id: number; branch_name: string; branch_code: string }
+}
 
-const initialLines: LineEntry[] = Array.from({ length: 10 }, (_, i) => ({
-  id: i + 1,
-  zone: 'Zone-1',
-  line: 'Line-1',
-  slots: Array(5).fill(DEFAULT_SLOT),
-}))
+interface CompanyOption { id: number; company_name: string }
+interface BranchOption { id: number; company_id: number; branch_name: string }
+interface ZoneOption { id: number; company_id: number; branch_id: number; zone_name: string }
 
-// ── Add Line Modal ─────────────────────────────────────
-function AddLineModal({ onClose, onSave }: { onClose: () => void; onSave: (entry: Omit<LineEntry, 'id'>) => void }) {
-  const [zone, setZone] = useState('')
-  const [lineNo, setLineNo] = useState('')
-  const [auditStart, setAuditStart] = useState('')
-  const [slots, setSlots] = useState([
-    { start: '', end: '' },
-    { start: '', end: '' },
-    { start: '', end: '' },
-  ])
+interface FormSlot {
+  slot_name: string
+  start_time: string
+  end_time: string
+}
 
-  const setSlot = (i: number, key: 'start' | 'end', val: string) => {
-    setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [key]: val } : s))
+interface FormErrors {
+  company_id?: string
+  branch_id?: string
+  zone_id?: string
+  line_name?: string
+  slots?: string
+}
+
+type FormField = 'company_id' | 'branch_id' | 'zone_id' | 'line_name'
+type Touched = Partial<Record<FormField, boolean>>
+
+const formRules: ValidationRules<FormField> = {
+  company_id: { required: 'Company is required' },
+  branch_id: { required: 'Branch is required' },
+  zone_id: { required: 'Zone is required' },
+  line_name: {
+    required: 'Line name is required',
+    minLength: { value: 2, message: 'Minimum 2 characters' },
+    maxLength: { value: 50, message: 'Maximum 50 characters' },
+  },
+}
+
+// ── Add / Edit Modal ─────────────────────────────────
+function LineModal({
+  line, companies, allBranches, allZones, onClose, onSaved,
+}: {
+  line: Line | null
+  companies: CompanyOption[]
+  allBranches: BranchOption[]
+  allZones: ZoneOption[]
+  onClose: () => void
+  onSaved: (msg: string) => void
+}) {
+  const isEdit = !!line
+  const [companyId, setCompanyId] = useState(line?.zone?.company_id?.toString() ?? '')
+  const [branchId, setBranchId] = useState(line?.branch_id?.toString() ?? '')
+  const [zoneId, setZoneId] = useState(line?.zone_id?.toString() ?? '')
+  const [lineName, setLineName] = useState(line?.line_name ?? '')
+  const [slots, setSlots] = useState<FormSlot[]>(
+    line?.slots?.map(s => ({
+      slot_name: s.slot_name,
+      start_time: s.start?.slice(0, 5) || '',
+      end_time: s.end?.slice(0, 5) || '',
+    })) ?? [{ slot_name: '', start_time: '', end_time: '' }]
+  )
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [touched, setTouched] = useState<Touched>({})
+
+  const filteredBranches = allBranches.filter(b => b.company_id === parseInt(companyId))
+  const filteredZones = allZones.filter(z =>
+    z.company_id === parseInt(companyId) && z.branch_id === parseInt(branchId)
+  )
+
+  const handleBlur = (key: FormField) => {
+    setTouched(t => ({ ...t, [key]: true }))
+    const val = key === 'company_id' ? companyId : key === 'branch_id' ? branchId : key === 'zone_id' ? zoneId : lineName
+    setErrors(e => ({ ...e, [key]: validateField(val, formRules[key]) }))
   }
 
-  const inp: React.CSSProperties = { width: '100%', height: 34, padding: '0 10px', fontSize: 12.5, fontFamily: 'inherit', color: '#2D3748', background: '#fff', border: '1px solid #CBD5E0', borderRadius: 5, outline: 'none', boxSizing: 'border-box' }
-  const lbl: React.CSSProperties = { display: 'block', fontSize: 11.5, fontWeight: 500, color: '#4A5568', marginBottom: 4 }
-  const sel: React.CSSProperties = { ...inp, cursor: 'pointer' }
-  const sec: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#A0AEC0', letterSpacing: '0.07em', margin: '14px 0 8px' }
+  const handleCompanyChange = (val: string) => {
+    setCompanyId(val)
+    setBranchId('')
+    setZoneId('')
+    if (touched.company_id) {
+      setErrors(e => ({ ...e, company_id: validateField(val, formRules.company_id) }))
+    }
+  }
+
+  const handleBranchChange = (val: string) => {
+    setBranchId(val)
+    setZoneId('')
+    if (touched.branch_id) {
+      setErrors(e => ({ ...e, branch_id: validateField(val, formRules.branch_id) }))
+    }
+  }
+
+  const addSlot = () => setSlots(prev => [...prev, { slot_name: '', start_time: '', end_time: '' }])
+  const removeSlot = (i: number) => setSlots(prev => prev.filter((_, idx) => idx !== i))
+  const updateSlot = (i: number, key: keyof FormSlot, val: string) =>
+    setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [key]: val } : s))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const allTouched: Touched = { company_id: true, branch_id: true, zone_id: true, line_name: true }
+    setTouched(allTouched)
+    const formData = { company_id: companyId, branch_id: branchId, zone_id: zoneId, line_name: lineName }
+    const allErrors = validateAll(formData, formRules)
+    // Also validate slots
+    const validSlots = slots.filter(s => s.slot_name && s.start_time && s.end_time)
+    if (validSlots.length === 0) allErrors.line_name = (allErrors.line_name ?? '') // keep existing
+    const slotsError = validSlots.length === 0 ? 'At least one complete slot is required' : undefined
+    setErrors({ ...allErrors, slots: slotsError } as any)
+    if (hasErrors(allErrors) || slotsError) return
+
+    setSaving(true)
+    try {
+      const payload: Record<string, unknown> = {
+        zone_id: zoneId,
+        branch_id: branchId,
+        line_name: lineName,
+        slots: validSlots.map(s => ({ slot_name: s.slot_name, start_time: s.start_time, end_time: s.end_time })),
+      }
+
+      if (isEdit) {
+        payload.uuid = line.uuid
+        const res = await apiCall<{ message?: string }>('/line/update', { payload })
+        onSaved(res.message || 'Line updated successfully')
+      } else {
+        const res = await apiCall<{ message?: string }>('/line/create', { payload })
+        onSaved(res.message || 'Line created successfully')
+      }
+      onClose()
+    } catch {
+      setErrors({ line_name: 'Failed to save line. Please try again.' })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 100 }} />
-      <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 101, backgroundColor: '#fff', borderRadius: 10, width: 460, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #EDF2F7', flexShrink: 0 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1A202C' }}>Add Line</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0AEC0', padding: 4, display: 'flex' }}><X size={18} /></button>
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-          {/* Zone + Line No */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 4 }}>
-            <div>
-              <label style={lbl}>Zone</label>
-              <select style={sel} value={zone} onChange={e => setZone(e.target.value)}>
-                <option value="">Select zone</option>
-                <option>Zone-1</option><option>Zone-2</option><option>Zone-3</option>
-              </select>
-            </div>
-            <div>
-              <label style={lbl}>Line No</label>
-              <select style={sel} value={lineNo} onChange={e => setLineNo(e.target.value)}>
-                <option value="">Line 10</option>
-                {Array.from({ length: 12 }, (_, i) => <option key={i + 1}>Line-{i + 1}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Audit start */}
-          <p style={sec}>AUDIT START TIMINGS</p>
-          <div style={{ marginBottom: 4 }}>
-            <label style={lbl}>Audit Start</label>
-            <input type="time" style={inp} value={auditStart} onChange={e => setAuditStart(e.target.value)} />
-          </div>
-
-          {/* Slots */}
-          {slots.map((slot, i) => (
-            <div key={i}>
-              <p style={sec}>SLOT {i + 1} | START TIME & END TIME</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div>
-                  <label style={lbl}>Start Time</label>
-                  <input type="time" style={inp} value={slot.start} onChange={e => setSlot(i, 'start', e.target.value)} />
-                </div>
-                <div>
-                  <label style={lbl}>End Time</label>
-                  <input type="time" style={inp} value={slot.end} onChange={e => setSlot(i, 'end', e.target.value)} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 20px', borderTop: '1px solid #EDF2F7', flexShrink: 0 }}>
-          <button onClick={onClose} style={{ height: 34, padding: '0 18px', background: '#fff', border: '1px solid #CBD5E0', borderRadius: 5, fontSize: 13, color: '#4A5568', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+    <Modal
+      title={isEdit ? 'Edit Line' : 'Add Line'}
+      onClose={onClose}
+      size="md"
+      footer={
+        <>
           <button
-            onClick={() => {
-              onSave({
-                zone: zone || 'Zone-1',
-                line: lineNo || 'Line-1',
-                slots: Array(5).fill({ start: slots[0].start || '9:00 AM', end: slots[0].end || '5:00 PM' }),
-              })
-              onClose()
-            }}
-            style={{ height: 34, padding: '0 18px', background: '#2DB3A0', border: 'none', borderRadius: 5, fontSize: 13, color: '#fff', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            type="button"
+            onClick={onClose}
+            className="h-[34px] px-[18px] bg-card border border-input-line
+              rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit"
           >
-            Add Line
+            Cancel
           </button>
+          <button
+            type="submit"
+            form="line-form"
+            disabled={saving}
+            className="h-[34px] px-[18px] bg-[#2DB3A0] hover:bg-[#26A090] border-none rounded-[5px]
+              text-[13px] text-white font-semibold cursor-pointer font-inherit
+              disabled:opacity-70 transition-colors"
+          >
+            {saving ? 'Saving...' : isEdit ? 'Update Line' : 'Add Line'}
+          </button>
+        </>
+      }
+    >
+      <form id="line-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <FormSelect
+          label="Company"
+          value={companyId}
+          onChange={e => { handleCompanyChange(e.target.value); handleBlur('company_id') }}
+          onBlur={() => handleBlur('company_id')}
+          touched={touched.company_id}
+          options={companies.map(c => ({ value: c.id, label: c.company_name }))}
+          placeholder="Select company"
+          error={errors.company_id}
+          required
+        />
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <FormSelect
+            label="Branch"
+            value={branchId}
+            onChange={e => { handleBranchChange(e.target.value); handleBlur('branch_id') }}
+            onBlur={() => handleBlur('branch_id')}
+            touched={touched.branch_id}
+            options={filteredBranches.map(b => ({ value: b.id, label: b.branch_name }))}
+            placeholder={companyId ? 'Select branch' : 'Select company first'}
+            disabled={!companyId}
+            error={errors.branch_id}
+            required
+          />
+          <FormSelect
+            label="Zone"
+            value={zoneId}
+            onChange={e => {
+              setZoneId(e.target.value)
+              if (touched.zone_id) {
+                setErrors(er => ({ ...er, zone_id: validateField(e.target.value, formRules.zone_id) }))
+              }
+              handleBlur('zone_id')
+            }}
+            onBlur={() => handleBlur('zone_id')}
+            touched={touched.zone_id}
+            options={filteredZones.map(z => ({ value: z.id, label: z.zone_name }))}
+            placeholder={branchId ? 'Select zone' : 'Select branch first'}
+            disabled={!branchId}
+            error={errors.zone_id}
+            required
+          />
         </div>
-      </div>
-    </>
+
+        <FormInput
+          label="Line Name"
+          value={lineName}
+          onChange={e => {
+            setLineName(e.target.value)
+            if (touched.line_name) {
+              setErrors(er => ({ ...er, line_name: validateField(e.target.value, formRules.line_name) }))
+            }
+          }}
+          onBlur={() => handleBlur('line_name')}
+          touched={touched.line_name}
+          placeholder="Enter line name"
+          error={errors.line_name}
+          required
+        />
+
+        {/* Slots */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-t-lighter tracking-wider uppercase">
+              Time Slots
+            </span>
+            <button
+              type="button"
+              onClick={addSlot}
+              className="h-6 px-2 flex items-center gap-1 bg-[#2DB3A0]/10 text-[#2DB3A0]
+                border-none rounded text-[11px] font-semibold cursor-pointer font-inherit
+                hover:bg-[#2DB3A0]/20 transition-colors"
+            >
+              <Plus size={12} /> Add Slot
+            </button>
+          </div>
+          {errors.slots && (
+            <span className="text-[11px] text-red-500 mb-2 block">{errors.slots}</span>
+          )}
+          <div className="flex flex-col gap-2">
+            {slots.map((slot, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1fr_1fr_28px] gap-2 items-end">
+                <FormInput
+                  label={i === 0 ? 'Slot Name' : undefined}
+                  placeholder="Morning"
+                  value={slot.slot_name}
+                  onChange={e => updateSlot(i, 'slot_name', e.target.value)}
+                />
+                <FormInput
+                  label={i === 0 ? 'Start Time' : undefined}
+                  type="time"
+                  value={slot.start_time}
+                  onChange={e => updateSlot(i, 'start_time', e.target.value)}
+                />
+                <FormInput
+                  label={i === 0 ? 'End Time' : undefined}
+                  type="time"
+                  value={slot.end_time}
+                  onChange={e => updateSlot(i, 'end_time', e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSlot(i)}
+                  disabled={slots.length <= 1}
+                  className={`h-[34px] w-7 flex items-center justify-center rounded border-none cursor-pointer
+                    ${slots.length <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-red-400 hover:bg-red-50 hover:text-red-500'}
+                    transition-colors`}
+                >
+                  <Minus size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
+// ── Main Page ─────────────────────────────────────────
 export default function LineMasterPage() {
-  const [lines, setLines] = useState<LineEntry[]>(initialLines)
+  const [lines, setLines] = useState<Line[]>([])
+  const [companies, setCompanies] = useState<CompanyOption[]>([])
+  const [allBranches, setAllBranches] = useState<BranchOption[]>([])
+  const [allZones, setAllZones] = useState<ZoneOption[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [deleting, setDeleting] = useState(false)
+
   const [showModal, setShowModal] = useState(false)
+  const [editLine, setEditLine] = useState<Line | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Line | null>(null)
+  const [toast, setToast] = useState<ToastData | null>(null)
 
-  const filtered = lines.filter(l =>
-    l.zone.toLowerCase().includes(search.toLowerCase()) ||
-    l.line.toLowerCase().includes(search.toLowerCase())
-  )
+  // Fetch dropdown data
+  useEffect(() => {
+    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET' })
+      .then(res => setCompanies(res.data?.companies ?? []))
+      .catch(() => {})
 
-  const handleSave = (entry: Omit<LineEntry, 'id'>) => {
-    setLines(prev => [...prev, { ...entry, id: prev.length + 1 }])
+    apiCall<{ data?: { branches?: BranchOption[] } }>('/branch/branchList', { method: 'GET' })
+      .then(res => setAllBranches(res.data?.branches ?? []))
+      .catch(() => {})
+
+    apiCall<{ data?: { zones?: ZoneOption[] } }>('/zone/zoneList', { method: 'GET' })
+      .then(res => setAllZones(res.data?.zones ?? []))
+      .catch(() => {})
+  }, [])
+
+  const fetchLines = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await apiCall<{
+        data?: {
+          lines?: Line[]
+          pagination?: { total: number; total_pages: number }
+        }
+      }>('/line/list', {
+        method: 'GET',
+        payload: { search, page: String(page), line_name: '', zone_id: '', branch_id: '' },
+      })
+
+      const data = res.data
+      setLines(data?.lines ?? [])
+      setTotalCount(data?.pagination?.total ?? 0)
+      setTotalPages(data?.pagination?.total_pages ?? 1)
+    } catch {
+      setLines([])
+    } finally {
+      setLoading(false)
+    }
+  }, [search, page])
+
+  useEffect(() => {
+    fetchLines()
+  }, [fetchLines])
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await apiCall<{ message?: string }>('/line/delete', { payload: { uuid: deleteTarget.uuid } })
+      setToast({ message: res.message || 'Line deleted successfully', type: 'success' })
+      setDeleteTarget(null)
+      fetchLines()
+    } catch {
+      setToast({ message: 'Failed to delete line', type: 'error' })
+    } finally {
+      setDeleting(false)
+    }
   }
 
-  const slotCell = (slot: LineSlot): React.CSSProperties => ({
-    padding: '6px 10px',
-    fontSize: 11,
-    color: '#4A5568',
-    whiteSpace: 'nowrap',
-    lineHeight: 1.6,
-  })
+  const handleSaved = (msg: string) => {
+    setToast({ message: msg, type: 'success' })
+    fetchLines()
+  }
+
+  const columns = [
+    {
+      key: '#',
+      header: '#',
+      render: (_: Line, i: number) => (
+        <span className="text-t-lighter text-xs">{(page - 1) * 30 + i + 1}</span>
+      ),
+    },
+    {
+      key: 'line_name',
+      header: 'Line Name',
+      render: (row: Line) => (
+        <span className="text-[#2DB3A0] font-semibold">{row.line_name}</span>
+      ),
+    },
+    {
+      key: 'company',
+      header: 'Company',
+      render: (row: Line) => (
+        <span className="text-t-body">{row.zone?.company?.company_name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'branch',
+      header: 'Branch',
+      render: (row: Line) => (
+        <span className="text-t-body">{row.branch?.branch_name ?? row.zone?.branch?.branch_name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'zone',
+      header: 'Zone',
+      render: (row: Line) => (
+        <span className="text-t-body">{row.zone?.zone_name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'slots',
+      header: 'Slots',
+      render: (row: Line) => (
+        <div className="flex flex-wrap gap-1">
+          {row.slots?.map((s, i) => (
+            <Badge key={i} variant="info">
+              {s.slot_name}: {s.start?.slice(0, 5)}-{s.end?.slice(0, 5)}
+            </Badge>
+          )) ?? '—'}
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (row: Line) => (
+        <div className="flex gap-1.5 items-center">
+          <button
+            onClick={() => { setEditLine(row); setShowModal(true) }}
+            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter
+              hover:text-[#2DB3A0] transition-colors flex"
+            title="Edit"
+          >
+            <Pencil size={13} />
+          </button>
+          <button
+            onClick={() => setDeleteTarget(row)}
+            className="bg-transparent border-none cursor-pointer p-1 text-[#FC8181]
+              hover:text-[#E53E3E] transition-colors flex"
+            title="Delete"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <AppLayout>
-      {showModal && <AddLineModal onClose={() => setShowModal(false)} onSave={handleSave} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* Breadcrumb */}
-      <div style={{ marginBottom: 4 }}>
-        <span style={{ fontSize: 12, color: '#A0AEC0' }}>Master</span>
-        <span style={{ fontSize: 12, color: '#A0AEC0', margin: '0 6px' }}>›</span>
-        <span style={{ fontSize: 12, color: '#2D3748', fontWeight: 500 }}>Line Master</span>
-      </div>
+      {showModal && (
+        <LineModal
+          line={editLine}
+          companies={companies}
+          allBranches={allBranches}
+          allZones={allZones}
+          onClose={() => setShowModal(false)}
+          onSaved={handleSaved}
+        />
+      )}
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-        <div>
-          <h1 style={{ margin: '0 0 3px', fontSize: 17, fontWeight: 700, color: '#1A202C' }}>Line Master</h1>
-          <p style={{ margin: 0, fontSize: 12, color: '#A0AEC0' }}>Production-line definitions with capacity and supervisor assignment.</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={13} color="#A0AEC0" style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)' }} />
-            <input placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} style={{ height: 32, paddingLeft: 28, paddingRight: 10, fontSize: 12.5, fontFamily: 'inherit', color: '#2D3748', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 5, outline: 'none', width: 160 }} />
-          </div>
-          <button style={{ height: 32, padding: '0 12px', display: 'flex', alignItems: 'center', gap: 5, background: '#fff', border: '1px solid #CBD5E0', borderRadius: 5, cursor: 'pointer', fontSize: 12.5, color: '#4A5568', fontFamily: 'inherit' }}>
-            <Download size={13} /> Export
-          </button>
-          <button onClick={() => setShowModal(true)} style={{ height: 32, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 5, background: '#2DB3A0', border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 12.5, color: '#fff', fontWeight: 600, fontFamily: 'inherit' }}>
-            <Plus size={13} /> Add Line
-          </button>
-        </div>
-      </div>
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Delete Line"
+          message={<>Are you sure you want to delete <strong>{deleteTarget.line_name}</strong>? This action cannot be undone.</>}
+          confirmLabel="Delete"
+          onConfirm={handleDelete}
+          onClose={() => setDeleteTarget(null)}
+          loading={deleting}
+          variant="danger"
+        />
+      )}
 
-      <div style={{ backgroundColor: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F7FAFC' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11.5, color: '#718096', borderBottom: '1px solid #E2E8F0', whiteSpace: 'nowrap' }}>Zone ↑</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11.5, color: '#718096', borderBottom: '1px solid #E2E8F0', whiteSpace: 'nowrap' }}>Line ↑</th>
-                {[1, 2, 3, 4, 5].map(n => (
-                  <th key={n} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11.5, color: '#718096', borderBottom: '1px solid #E2E8F0', whiteSpace: 'nowrap' }}>
-                    Slot-{n}
-                    <div style={{ fontSize: 10, color: '#CBD5E0', fontWeight: 400 }}>Start/End Time</div>
-                  </th>
-                ))}
-                <th style={{ padding: '10px 14px', borderBottom: '1px solid #E2E8F0', width: 36 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((line, i) => (
-                <tr key={line.id} style={{ borderBottom: '1px solid #EDF2F7', backgroundColor: i % 2 === 0 ? '#fff' : '#FAFBFC' }}>
-                  <td style={{ padding: '8px 14px', color: '#4A5568', fontWeight: 500 }}>{line.zone}</td>
-                  <td style={{ padding: '8px 14px', color: '#4A5568', fontWeight: 500 }}>{line.line}</td>
-                  {line.slots.map((slot, si) => (
-                    <td key={si} style={slotCell(slot)}>
-                      <div style={{ color: '#718096', fontSize: 10 }}>S: {slot.start}</div>
-                      <div style={{ color: '#718096', fontSize: 10 }}>E: {slot.end}</div>
-                    </td>
-                  ))}
-                  <td style={{ padding: '8px 10px' }}>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#A0AEC0', display: 'flex' }}><MoreVertical size={14} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ padding: '10px 16px', borderTop: '1px solid #EDF2F7' }}>
-          <span style={{ fontSize: 12, color: '#A0AEC0' }}>{filtered.length} line{filtered.length !== 1 ? 's' : ''} found</span>
-        </div>
-      </div>
+      <Breadcrumb items={[{ label: 'Master' }, { label: 'Line Master', active: true }]} />
+      <PageHeader title="Line Master" description="Manage production lines with zone assignments and time slot configurations." />
+
+      <Toolbar
+        title="All Lines"
+        search={search}
+        onSearchChange={val => { setSearch(val); setPage(1) }}
+        onAdd={() => { setEditLine(null); setShowModal(true) }}
+        addLabel="Add Line"
+      />
+
+      <DataTable
+        columns={columns}
+        data={lines}
+        loading={loading}
+        emptyMessage="No lines found"
+        page={page}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        onPageChange={setPage}
+        countLabel="line"
+      />
     </AppLayout>
   )
 }
