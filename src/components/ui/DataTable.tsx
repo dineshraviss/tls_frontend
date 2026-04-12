@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Pagination from './Pagination'
+import { PER_PAGE } from '@/lib/constants'
 
 interface Column<T> {
   key: string
@@ -17,26 +18,27 @@ interface DataTableProps<T> {
   page?: number
   totalPages?: number
   totalCount?: number
+  perPage?: number
   onPageChange?: (page: number) => void
   countLabel?: string
 }
 
 export default function DataTable<T>({
   columns, data, loading, emptyMessage = 'No records found',
-  page = 1, totalPages = 1, totalCount = 0,
+  page = 1, totalPages = 1, totalCount = 0, perPage = PER_PAGE,
   onPageChange, countLabel = 'record',
 }: DataTableProps<T>) {
   return (
-    <div className="bg-card rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+    <div className="bg-card rounded-card shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden border border-header-line">
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-[12.5px]">
+        <table className="w-full border-collapse text-sm2">
           <thead>
             <tr className="bg-table-head">
               {columns.map(col => (
                 <th
                   key={col.key}
-                  className={`px-3.5 py-2.5 text-left font-semibold text-[11.5px]
+                  className={`px-3.5 py-2.5 text-left font-semibold text-xs
                     text-t-light border-b border-header-line
                     whitespace-nowrap ${col.className || ''}`}
                 >
@@ -48,13 +50,13 @@ export default function DataTable<T>({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="p-8 text-center text-t-lighter text-[13px]">
+                <td colSpan={columns.length} className="p-8 text-center text-t-lighter text-sm">
                   Loading...
                 </td>
               </tr>
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="p-8 text-center text-t-lighter text-[13px]">
+                <td colSpan={columns.length} className="p-8 text-center text-t-lighter text-sm">
                   {emptyMessage}
                 </td>
               </tr>
@@ -66,7 +68,7 @@ export default function DataTable<T>({
                     ${i % 2 === 0 ? 'bg-card' : 'bg-card-alt'}`}
                 >
                   {columns.map(col => (
-                    <td key={col.key} className={`px-3.5 py-[11px] ${col.className || ''}`}>
+                    <td key={col.key} className={`px-3.5 py-cell-py ${col.className || ''}`}>
                       {col.render ? col.render(row, i) : String((row as Record<string, unknown>)[col.key] ?? '—')}
                     </td>
                   ))}
@@ -77,37 +79,23 @@ export default function DataTable<T>({
         </table>
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-table-line flex items-center justify-between">
-        <span className="text-xs text-t-lighter">
-          {totalCount} {countLabel}{totalCount !== 1 ? 's' : ''} found
-        </span>
-        {totalPages > 1 && onPageChange && (
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => onPageChange(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="bg-transparent border border-header-line rounded p-1
-                flex items-center cursor-pointer disabled:cursor-not-allowed
-                text-t-light disabled:text-input-line"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span className="text-xs text-t-body min-w-[60px] text-center">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-              disabled={page >= totalPages}
-              className="bg-transparent border border-header-line rounded p-1
-                flex items-center cursor-pointer disabled:cursor-not-allowed
-                text-t-light disabled:text-input-line"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Pagination */}
+      {onPageChange ? (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          perPage={perPage}
+          onPageChange={onPageChange}
+          countLabel={countLabel}
+        />
+      ) : (
+        <div className="px-4 py-2.5 border-t border-table-line">
+          <span className="text-xs text-t-lighter">
+            {totalCount} {countLabel}{totalCount !== 1 ? 's' : ''} found
+          </span>
+        </div>
+      )}
     </div>
   )
 }

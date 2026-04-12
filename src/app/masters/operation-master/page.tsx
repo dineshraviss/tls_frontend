@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/ui/Button'
 import AppLayout from '@/components/layout/AppLayout'
 import { ArrowRight } from 'lucide-react'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -39,16 +40,13 @@ function AddOperationModal({ onClose, onSave }: { onClose: () => void; onSave: (
       onClose={onClose}
       footer={
         <>
-          <button onClick={onClose} className="h-[34px] px-[18px] bg-card border border-input-line rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit">Cancel</button>
-          <button
-            onClick={() => {
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => {
               onSave({ code: form.code || 'OP-NEW', machineType: form.machineType || MACHINE_TYPES[0], name: form.name || 'NEW OP', sam: parseFloat(form.sam) || 0, defects: 0 })
               onClose()
-            }}
-            className="h-[34px] px-[18px] bg-accent hover:bg-accent-hover border-none rounded-[5px] text-[13px] text-white font-semibold cursor-pointer font-inherit"
-          >
+            }}>
             Add Operation
-          </button>
+          </Button>
         </>
       }
     >

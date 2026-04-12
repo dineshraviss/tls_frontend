@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/ui/Button'
 import AppLayout from '@/components/layout/AppLayout'
 import { Search, Download, Upload, Plus, Pencil, Trash2, X, QrCode, ArrowRight, ChevronDown } from 'lucide-react'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Modal from '@/components/ui/Modal'
 import FormInput from '@/components/ui/FormInput'
+import FormTextarea from '@/components/ui/FormTextarea'
 import Badge from '@/components/ui/Badge'
 
 interface MachineSpec { id: string; brand: string; model: string; line: string; condition: string; nextMaint: string; status: 'Active' | 'Offline' }
@@ -37,16 +39,13 @@ function AddMachineTypeModal({ onClose, onSave }: { onClose: () => void; onSave:
   return (
     <Modal title="Add Machine Type" onClose={onClose} footer={
       <>
-        <button onClick={onClose} className="h-[34px] px-[18px] bg-card border border-input-line rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit">Cancel</button>
-        <button onClick={() => { onSave(name, desc); onClose() }} className="h-[34px] px-[18px] bg-accent hover:bg-accent-hover border-none rounded-[5px] text-[13px] text-white font-semibold cursor-pointer font-inherit">Add Machine Type</button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={() => { onSave(name, desc); onClose() }}>Add Machine Type</Button>
       </>
     }>
       <div className="flex flex-col gap-3">
         <FormInput label="Machine Type Name" placeholder="e.g. Flatlock" value={name} onChange={e => setName(e.target.value)} autoFocus />
-        <div className="flex flex-col gap-1">
-          <label className="text-[11.5px] font-medium text-t-body">Description</label>
-          <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Brief description" className="w-full h-[72px] px-2.5 py-2 text-[12.5px] text-t-secondary bg-input border border-input-line rounded-[5px] outline-none resize-none focus:border-accent focus:ring-2 focus:ring-accent/15" />
-        </div>
+        <FormTextarea label="Description" value={desc} onChange={e => setDesc(e.target.value)} placeholder="Brief description" rows={3} />
       </div>
     </Modal>
   )
@@ -56,9 +55,7 @@ function AddMachineTypeModal({ onClose, onSave }: { onClose: () => void; onSave:
 function QRCodeModal({ spec, onClose }: { spec: MachineSpec; onClose: () => void }) {
   return (
     <Modal title="Machine Specification QR Code" onClose={onClose} footer={
-      <button className="h-[34px] px-[18px] bg-accent hover:bg-accent-hover border-none rounded-[5px] text-[13px] text-white font-semibold cursor-pointer font-inherit inline-flex items-center gap-1.5">
-        <Download size={13} /> Download QR Code
-      </button>
+      <Button variant="primary" leftIcon={<Download size={13} />}>Download QR Code</Button>
     }>
       <div className="text-center">
         <div className="w-[140px] h-[140px] mx-auto mb-4 border border-header-line rounded-md flex items-center justify-center bg-table-head relative overflow-hidden">
@@ -87,15 +84,14 @@ function AddOperationModal({ machineTypeName, onClose, onSave }: { machineTypeNa
   return (
     <Modal title="Add Operation" onClose={onClose} footer={
       <>
-        <button onClick={onClose} className="h-[34px] px-[18px] bg-card border border-input-line rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit">Cancel</button>
-        <button onClick={() => { onSave({ code: form.code || 'OP-NEW', mType: machineTypeName, name: form.name || 'NEW OPERATION', sam: parseFloat(form.sam) || 0 }); onClose() }}
-          className="h-[34px] px-[18px] bg-accent hover:bg-accent-hover border-none rounded-[5px] text-[13px] text-white font-semibold cursor-pointer font-inherit">Add Operation</button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={() => { onSave({ code: form.code || 'OP-NEW', mType: machineTypeName, name: form.name || 'NEW OPERATION', sam: parseFloat(form.sam) || 0 }); onClose() }}>Add Operation</Button>
       </>
     }>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-[11.5px] font-medium text-t-body">Machine Type</label>
-          <div className="w-full h-[34px] px-2.5 flex items-center justify-between bg-table-head border border-input-line rounded-[5px] text-[12.5px] text-t-secondary cursor-default">
+          <label className="text-xs font-medium text-t-body">Machine Type</label>
+          <div className="w-full h-input-h px-2.5 flex items-center justify-between bg-table-head border border-input-line rounded-input text-sm2 text-t-secondary cursor-default">
             <span>{machineTypeName}</span><ChevronDown size={13} className="text-t-lighter" />
           </div>
         </div>
@@ -121,20 +117,20 @@ function OperationDetailPanel({ op, machineTypeName, onClose }: { op: Operation;
     <div className="w-[280px] shrink-0 border-l border-header-line bg-card flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-3.5 py-3 border-b border-table-line">
         <div>
-          <p className="m-0 text-[10px] text-t-lighter font-semibold">{machineTypeName} | {op.code}</p>
-          <h3 className="m-0 mt-0.5 text-[13px] font-bold text-t-primary">{op.name}</h3>
+          <p className="m-0 text-2xs text-t-lighter font-semibold">{machineTypeName} | {op.code}</p>
+          <h3 className="m-0 mt-0.5 text-sm font-bold text-t-primary">{op.name}</h3>
         </div>
         <button onClick={onClose} className="bg-transparent border-none cursor-pointer p-1 text-t-lighter flex"><X size={16} /></button>
       </div>
       <div className="flex-1 overflow-y-auto p-3.5">
-        <p className="m-0 mb-3 text-[11px] font-bold text-t-lighter tracking-wider">OPERATION NAME</p>
-        <p className="m-0 mb-4 text-[13px] font-semibold text-t-secondary">{op.name}</p>
+        <p className="m-0 mb-3 text-xs2 font-bold text-t-lighter tracking-wider">OPERATION NAME</p>
+        <p className="m-0 mb-4 text-sm font-semibold text-t-secondary">{op.name}</p>
         <div className="grid grid-cols-2 gap-2.5 mb-4">
-          <div className="p-2.5 bg-table-head rounded-md"><p className="m-0 mb-0.5 text-[10px] text-t-lighter">Op Code</p><p className="m-0 text-[13px] font-semibold text-t-secondary">{op.code}</p></div>
-          <div className="p-2.5 bg-table-head rounded-md"><p className="m-0 mb-0.5 text-[10px] text-t-lighter">Machine Type</p><p className="m-0 text-[13px] font-semibold text-t-secondary">{op.mType}</p></div>
-          <div className="p-2.5 bg-table-head rounded-md col-span-2"><p className="m-0 mb-0.5 text-[10px] text-t-lighter">SAM (minutes)</p><p className="m-0 text-[13px] font-semibold text-t-secondary">{op.sam}</p></div>
+          <div className="p-2.5 bg-table-head rounded-md"><p className="m-0 mb-0.5 text-2xs text-t-lighter">Op Code</p><p className="m-0 text-sm font-semibold text-t-secondary">{op.code}</p></div>
+          <div className="p-2.5 bg-table-head rounded-md"><p className="m-0 mb-0.5 text-2xs text-t-lighter">Machine Type</p><p className="m-0 text-sm font-semibold text-t-secondary">{op.mType}</p></div>
+          <div className="p-2.5 bg-table-head rounded-md col-span-2"><p className="m-0 mb-0.5 text-2xs text-t-lighter">SAM (minutes)</p><p className="m-0 text-sm font-semibold text-t-secondary">{op.sam}</p></div>
         </div>
-        <p className="m-0 mb-2.5 text-[11px] font-bold text-t-lighter tracking-wider">POSSIBLE DEFECTS</p>
+        <p className="m-0 mb-2.5 text-xs2 font-bold text-t-lighter tracking-wider">POSSIBLE DEFECTS</p>
         <div className="flex flex-col gap-2">
           {defects.map((d, i) => (
             <div key={i} className="flex justify-between items-center px-2.5 py-2 bg-table-head rounded-md">
@@ -182,18 +178,18 @@ export default function MachineHubPage() {
         <div className="flex gap-2 items-center">
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-t-lighter" />
-            <input placeholder="Search" className="h-8 pl-7 pr-2.5 text-[12.5px] font-inherit text-t-secondary bg-card border border-header-line rounded-[5px] outline-none w-40 focus:border-accent" />
+            <input placeholder="Search" className="h-8 pl-7 pr-2.5 text-sm2 font-inherit text-t-secondary bg-card border border-header-line rounded-input outline-none w-40 focus:border-accent" />
           </div>
-          <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-[5px] cursor-pointer text-[12.5px] text-t-body font-inherit hover:bg-table-head"><Download size={13} /> Export</button>
-          <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-[5px] cursor-pointer text-[12.5px] text-t-body font-inherit hover:bg-table-head"><Upload size={13} /> Import</button>
-          <button onClick={() => setShowAddType(true)} className="h-8 px-3.5 flex items-center gap-1.5 bg-accent hover:bg-accent-hover border-none rounded-[5px] cursor-pointer text-[12.5px] text-white font-semibold font-inherit"><Plus size={13} /> Add Machine Type</button>
+          <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-input cursor-pointer text-sm2 text-t-body font-inherit hover:bg-table-head"><Download size={13} /> Export</button>
+          <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-input cursor-pointer text-sm2 text-t-body font-inherit hover:bg-table-head"><Upload size={13} /> Import</button>
+          <button onClick={() => setShowAddType(true)} className="h-8 px-3.5 flex items-center gap-1.5 bg-accent hover:bg-accent-hover border-none rounded-input cursor-pointer text-sm2 text-white font-semibold font-inherit"><Plus size={13} /> Add Machine Type</button>
         </div>
       </PageHeader>
 
       {/* Main tabs */}
       <div className="flex gap-0 border-b border-header-line mb-3">
         {['Machine Type', 'Maintenance'].map(tab => (
-          <button key={tab} className={`px-4 py-[7px] border-none bg-transparent cursor-pointer text-[13px] font-inherit -mb-px ${tab === 'Machine Type' ? 'font-semibold text-accent border-b-2 border-b-accent' : 'font-normal text-t-light border-b-2 border-b-transparent'}`}>{tab}</button>
+          <button key={tab} className={`px-4 py-cell-py-sm border-none bg-transparent cursor-pointer text-sm font-inherit -mb-px ${tab === 'Machine Type' ? 'font-semibold text-accent border-b-2 border-b-accent' : 'font-normal text-t-light border-b-2 border-b-transparent'}`}>{tab}</button>
         ))}
       </div>
 
@@ -205,7 +201,7 @@ export default function MachineHubPage() {
             <div className="relative">
               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-t-lighter" />
               <input placeholder="Search" value={searchType} onChange={e => setSearchType(e.target.value)}
-                className="w-full h-[30px] pl-[26px] pr-2 text-xs font-inherit text-t-secondary bg-table-head border border-header-line rounded-[5px] outline-none" />
+                className="w-full h-[30px] pl-[26px] pr-2 text-xs font-inherit text-t-secondary bg-table-head border border-header-line rounded-input outline-none" />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -213,10 +209,10 @@ export default function MachineHubPage() {
               <div key={t.id} onClick={() => { setSelectedId(t.id); setSelectedOp(null) }}
                 className={`px-3.5 py-2.5 cursor-pointer border-b border-table-line flex justify-between items-center ${selectedId === t.id ? 'bg-accent/5' : 'bg-card hover:bg-card-alt'}`}>
                 <div>
-                  <p className={`m-0 mb-0.5 text-[13px] ${selectedId === t.id ? 'font-semibold text-accent' : 'font-medium text-t-secondary'}`}>{t.name}</p>
-                  <p className={`m-0 text-[11px] ${selectedId === t.id ? 'text-accent' : 'text-t-lighter'}`}>{t.category}</p>
+                  <p className={`m-0 mb-0.5 text-sm ${selectedId === t.id ? 'font-semibold text-accent' : 'font-medium text-t-secondary'}`}>{t.name}</p>
+                  <p className={`m-0 text-xs2 ${selectedId === t.id ? 'text-accent' : 'text-t-lighter'}`}>{t.category}</p>
                 </div>
-                <span className={`text-xs font-semibold rounded-[10px] px-2 py-px ${selectedId === t.id ? 'text-accent bg-accent/10' : 'text-t-lighter bg-card-alt'}`}>{t.machines}</span>
+                <span className={`text-xs font-semibold rounded-card px-2 py-px ${selectedId === t.id ? 'text-accent bg-accent/10' : 'text-t-lighter bg-card-alt'}`}>{t.machines}</span>
               </div>
             ))}
           </div>
@@ -228,22 +224,22 @@ export default function MachineHubPage() {
           <div className="px-4 py-3.5 border-b border-table-line shrink-0">
             <div className="flex justify-between items-start">
               <div className="flex gap-2.5 items-start">
-                <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded shrink-0 mt-0.5">FL-2T</span>
+                <span className="text-2xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded shrink-0 mt-0.5">FL-2T</span>
                 <div>
                   <p className="m-0 mb-0.5 text-sm font-bold text-t-primary">{selected.name}</p>
                   <p className="m-0 text-xs text-t-lighter">{selected.description}</p>
                 </div>
               </div>
               <div className="flex gap-1.5">
-                <button className="h-[30px] px-3 flex items-center gap-1 bg-card border border-input-line rounded-[5px] cursor-pointer text-xs text-t-body font-inherit"><Pencil size={12} /> Edit</button>
-                <button className="h-[30px] px-3 flex items-center gap-1 bg-card border border-[#FEB2B2] rounded-[5px] cursor-pointer text-xs text-red-500 font-inherit"><Trash2 size={12} /> Delete</button>
+                <button className="h-[30px] px-3 flex items-center gap-1 bg-card border border-input-line rounded-input cursor-pointer text-xs text-t-body font-inherit"><Pencil size={12} /> Edit</button>
+                <button className="h-[30px] px-3 flex items-center gap-1 bg-card border border-error-border rounded-input cursor-pointer text-xs text-red-500 font-inherit"><Trash2 size={12} /> Delete</button>
               </div>
             </div>
             {/* Stats */}
             <div className="grid grid-cols-4 mt-3.5 border border-header-line rounded-md overflow-hidden">
               {[{ label: 'Machines', value: selected.machines }, { label: 'Active', value: selected.active }, { label: 'In Maintenance', value: selected.maintenance || '--' }, { label: 'Operations', value: selected.operations }].map((s, i) => (
                 <div key={s.label} className={`px-5 py-2.5 text-center ${i < 3 ? 'border-r border-header-line' : ''}`}>
-                  <p className="m-0 mb-0.5 text-[11px] text-t-lighter whitespace-nowrap">{s.label}</p>
+                  <p className="m-0 mb-0.5 text-xs2 text-t-lighter whitespace-nowrap">{s.label}</p>
                   <p className="m-0 text-lg font-bold text-t-primary">{s.value}</p>
                 </div>
               ))}
@@ -256,14 +252,14 @@ export default function MachineHubPage() {
               <div className="flex gap-0">
                 {(['Machine Specification', 'Operation Master'] as const).map(tab => (
                   <button key={tab} onClick={() => { setSubTab(tab); setSelectedOp(null) }}
-                    className={`px-3.5 py-2.5 border-none bg-transparent cursor-pointer text-[12.5px] font-inherit whitespace-nowrap -mb-px
+                    className={`px-3.5 py-2.5 border-none bg-transparent cursor-pointer text-sm2 font-inherit whitespace-nowrap -mb-px
                       ${subTab === tab ? 'font-semibold text-accent border-b-2 border-b-accent' : 'font-normal text-t-light border-b-2 border-b-transparent'}`}>
-                    {tab} <span className="text-[11px] text-t-lighter ml-1">{tab === 'Machine Specification' ? selected.specs.length : selected.ops.length}</span>
+                    {tab} <span className="text-xs2 text-t-lighter ml-1">{tab === 'Machine Specification' ? selected.specs.length : selected.ops.length}</span>
                   </button>
                 ))}
               </div>
               <button onClick={() => subTab === 'Operation Master' ? setShowAddOp(true) : undefined}
-                className="h-7 px-3 flex items-center gap-1 bg-accent hover:bg-accent-hover border-none rounded-[5px] cursor-pointer text-xs text-white font-semibold font-inherit">
+                className="h-7 px-3 flex items-center gap-1 bg-accent hover:bg-accent-hover border-none rounded-input cursor-pointer text-xs text-white font-semibold font-inherit">
                 <Plus size={12} /> Add New
               </button>
             </div>
@@ -273,13 +269,13 @@ export default function MachineHubPage() {
               <div className="flex-1 overflow-y-auto">
                 {subTab === 'Machine Specification' ? (
                   selected.specs.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-t-lighter text-[13px]">No machines registered for this type yet</div>
+                    <div className="flex items-center justify-center h-full text-t-lighter text-sm">No machines registered for this type yet</div>
                   ) : (
-                    <table className="w-full border-collapse text-[12.5px]">
+                    <table className="w-full border-collapse text-sm2">
                       <thead>
                         <tr className="bg-table-head">
                           {['M. No \u2191', 'Brand', 'Model', 'Line \u2191', 'Condition \u2191', 'Next Maint. \u2191', 'Status', ''].map((h, i) => (
-                            <th key={i} className="px-3.5 py-[9px] text-left font-semibold text-[11.5px] text-t-light border-b border-header-line whitespace-nowrap">{h}</th>
+                            <th key={i} className="px-3.5 py-[9px] text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -306,13 +302,13 @@ export default function MachineHubPage() {
                   )
                 ) : (
                   selected.ops.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-t-lighter text-[13px]">No operations for this type yet</div>
+                    <div className="flex items-center justify-center h-full text-t-lighter text-sm">No operations for this type yet</div>
                   ) : (
-                    <table className="w-full border-collapse text-[12.5px]">
+                    <table className="w-full border-collapse text-sm2">
                       <thead>
                         <tr className="bg-table-head">
                           {['Code', 'M-Type', 'Operation Name', 'SAM', 'Defects', ''].map((h, i) => (
-                            <th key={i} className="px-3.5 py-[9px] text-left font-semibold text-[11.5px] text-t-light border-b border-header-line whitespace-nowrap">{h}</th>
+                            <th key={i} className="px-3.5 py-[9px] text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>

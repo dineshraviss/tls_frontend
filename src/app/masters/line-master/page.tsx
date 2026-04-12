@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { Pencil, Trash2, Plus, Minus } from 'lucide-react'
+import { Pencil, Trash2, Eye } from 'lucide-react'
 import { apiCall } from '@/services/apiClient'
+import { PER_PAGE } from '@/lib/constants'
 import Toast, { type ToastData } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
-import DataTable from '@/components/ui/DataTable'
 import Toolbar from '@/components/ui/Toolbar'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import FormInput from '@/components/ui/FormInput'
 import FormSelect from '@/components/ui/FormSelect'
+import AdvancedTable, { type AdvancedColumn, type ActionItem } from '@/components/ui/AdvancedTable'
+import ViewModal from '@/components/ui/ViewModal'
 import Badge from '@/components/ui/Badge'
 import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 
@@ -43,7 +46,7 @@ interface Line {
   branch?: { id: number; branch_name: string; branch_code: string }
 }
 
-interface CompanyOption { id: number; company_name: string }
+interface CompanyOption { id: number; company_name: string; max_slot?: number }
 interface BranchOption { id: number; company_id: number; branch_name: string }
 interface ZoneOption { id: number; company_id: number; branch_id: number; zone_name: string }
 
@@ -117,21 +120,27 @@ function LineModal({
     setCompanyId(val)
     setBranchId('')
     setZoneId('')
-    if (touched.company_id) {
-      setErrors(e => ({ ...e, company_id: validateField(val, formRules.company_id) }))
-    }
+    setTouched(t => ({ ...t, company_id: true }))
+    setErrors(e => ({ ...e, company_id: validateField(val, formRules.company_id) }))
+
+    // Auto-generate slots based on company max_slot
+    const company = companies.find(c => c.id === parseInt(val))
+    const slotCount = company?.max_slot ?? 1
+    setSlots(
+      Array.from({ length: slotCount }, (_, i) => ({
+        slot_name: `Slot ${i + 1}`,
+        start_time: '',
+        end_time: '',
+      }))
+    )
   }
 
   const handleBranchChange = (val: string) => {
     setBranchId(val)
     setZoneId('')
-    if (touched.branch_id) {
-      setErrors(e => ({ ...e, branch_id: validateField(val, formRules.branch_id) }))
-    }
+    setTouched(t => ({ ...t, branch_id: true }))
+    setErrors(e => ({ ...e, branch_id: validateField(val, formRules.branch_id) }))
   }
-
-  const addSlot = () => setSlots(prev => [...prev, { slot_name: '', start_time: '', end_time: '' }])
-  const removeSlot = (i: number) => setSlots(prev => prev.filter((_, idx) => idx !== i))
   const updateSlot = (i: number, key: keyof FormSlot, val: string) =>
     setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, [key]: val } : s))
 
@@ -160,10 +169,12 @@ function LineModal({
 
       if (isEdit) {
         payload.uuid = line.uuid
-        const res = await apiCall<{ message?: string }>('/line/update', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/line/update', { payload })
+        if (res.success === false) { setErrors({ line_name: res.message || 'Update failed' }); return }
         onSaved(res.message || 'Line updated successfully')
       } else {
-        const res = await apiCall<{ message?: string }>('/line/create', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/line/create', { payload })
+        if (res.success === false) { setErrors({ line_name: res.message || 'Creation failed' }); return }
         onSaved(res.message || 'Line created successfully')
       }
       onClose()
@@ -181,24 +192,10 @@ function LineModal({
       size="md"
       footer={
         <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-[34px] px-[18px] bg-card border border-input-line
-              rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="line-form"
-            disabled={saving}
-            className="h-[34px] px-[18px] bg-[#2DB3A0] hover:bg-[#26A090] border-none rounded-[5px]
-              text-[13px] text-white font-semibold cursor-pointer font-inherit
-              disabled:opacity-70 transition-colors"
-          >
-            {saving ? 'Saving...' : isEdit ? 'Update Line' : 'Add Line'}
-          </button>
+          <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" type="submit" form="line-form" isLoading={saving}>
+            {isEdit ? 'Update Line' : 'Add Line'}
+          </Button>
         </>
       }
     >
@@ -206,7 +203,7 @@ function LineModal({
         <FormSelect
           label="Company"
           value={companyId}
-          onChange={e => { handleCompanyChange(e.target.value); handleBlur('company_id') }}
+          onChange={e => handleCompanyChange(e.target.value)}
           onBlur={() => handleBlur('company_id')}
           touched={touched.company_id}
           options={companies.map(c => ({ value: c.id, label: c.company_name }))}
@@ -219,7 +216,7 @@ function LineModal({
           <FormSelect
             label="Branch"
             value={branchId}
-            onChange={e => { handleBranchChange(e.target.value); handleBlur('branch_id') }}
+            onChange={e => handleBranchChange(e.target.value)}
             onBlur={() => handleBlur('branch_id')}
             touched={touched.branch_id}
             options={filteredBranches.map(b => ({ value: b.id, label: b.branch_name }))}
@@ -232,11 +229,10 @@ function LineModal({
             label="Zone"
             value={zoneId}
             onChange={e => {
-              setZoneId(e.target.value)
-              if (touched.zone_id) {
-                setErrors(er => ({ ...er, zone_id: validateField(e.target.value, formRules.zone_id) }))
-              }
-              handleBlur('zone_id')
+              const val = e.target.value
+              setZoneId(val)
+              setTouched(t => ({ ...t, zone_id: true }))
+              setErrors(er => ({ ...er, zone_id: validateField(val, formRules.zone_id) }))
             }}
             onBlur={() => handleBlur('zone_id')}
             touched={touched.zone_id}
@@ -264,60 +260,46 @@ function LineModal({
           required
         />
 
-        {/* Slots */}
+        {/* Audit Slot Timings */}
+        {slots.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-t-lighter tracking-wider uppercase">
-              Time Slots
+          <div className="mb-3">
+            <span className="text-xs2 font-bold text-t-lighter tracking-wider uppercase">
+              Audit Slot Timings
             </span>
-            <button
-              type="button"
-              onClick={addSlot}
-              className="h-6 px-2 flex items-center gap-1 bg-[#2DB3A0]/10 text-[#2DB3A0]
-                border-none rounded text-[11px] font-semibold cursor-pointer font-inherit
-                hover:bg-[#2DB3A0]/20 transition-colors"
-            >
-              <Plus size={12} /> Add Slot
-            </button>
           </div>
           {errors.slots && (
-            <span className="text-[11px] text-red-500 mb-2 block">{errors.slots}</span>
+            <span className="text-xs2 text-red-500 mb-2 block">{errors.slots}</span>
           )}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {slots.map((slot, i) => (
-              <div key={i} className="grid grid-cols-[1fr_1fr_1fr_28px] gap-2 items-end">
+              <div key={i}>
                 <FormInput
-                  label={i === 0 ? 'Slot Name' : undefined}
-                  placeholder="Morning"
+                  label={`Slot ${i + 1} Name`}
+                  placeholder="e.g. Morning"
                   value={slot.slot_name}
                   onChange={e => updateSlot(i, 'slot_name', e.target.value)}
+                  className="mb-2"
                 />
-                <FormInput
-                  label={i === 0 ? 'Start Time' : undefined}
-                  type="time"
-                  value={slot.start_time}
-                  onChange={e => updateSlot(i, 'start_time', e.target.value)}
-                />
-                <FormInput
-                  label={i === 0 ? 'End Time' : undefined}
-                  type="time"
-                  value={slot.end_time}
-                  onChange={e => updateSlot(i, 'end_time', e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeSlot(i)}
-                  disabled={slots.length <= 1}
-                  className={`h-[34px] w-7 flex items-center justify-center rounded border-none cursor-pointer
-                    ${slots.length <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-red-400 hover:bg-red-50 hover:text-red-500'}
-                    transition-colors`}
-                >
-                  <Minus size={14} />
-                </button>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <FormInput
+                    label="Start Time"
+                    type="time"
+                    value={slot.start_time}
+                    onChange={e => updateSlot(i, 'start_time', e.target.value)}
+                  />
+                  <FormInput
+                    label="End Time"
+                    type="time"
+                    value={slot.end_time}
+                    onChange={e => updateSlot(i, 'end_time', e.target.value)}
+                  />
+                </div>
               </div>
             ))}
           </div>
         </div>
+        )}
       </form>
     </Modal>
   )
@@ -335,23 +317,39 @@ export default function LineMasterPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [deleting, setDeleting] = useState(false)
+  const [selected, setSelected] = useState<string[]>([])
 
   const [showModal, setShowModal] = useState(false)
   const [editLine, setEditLine] = useState<Line | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Line | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
+  const [viewData, setViewData] = useState<Record<string, unknown> | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+
+  const handleView = async (uuid: string) => {
+    setViewLoading(true)
+    setViewData({})
+    try {
+      const res = await apiCall<{ data?: Record<string, unknown> }>('/line/show', { method: 'GET', encrypt: false, payload: { uuid } })
+      setViewData(res.data ?? res)
+    } catch {
+      setViewData(null)
+    } finally {
+      setViewLoading(false)
+    }
+  }
 
   // Fetch dropdown data
   useEffect(() => {
-    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET' })
+    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET', encrypt: false, payload: { page: '1', per_page: '100', search: '' } })
       .then(res => setCompanies(res.data?.companies ?? []))
       .catch(() => {})
 
-    apiCall<{ data?: { branches?: BranchOption[] } }>('/branch/branchList', { method: 'GET' })
+    apiCall<{ data?: { branches?: BranchOption[] } }>('/branch/branchList', { method: 'GET', encrypt: false, payload: { page: '1', per_page: '100', search: '' } })
       .then(res => setAllBranches(res.data?.branches ?? []))
       .catch(() => {})
 
-    apiCall<{ data?: { zones?: ZoneOption[] } }>('/zone/zoneList', { method: 'GET' })
+    apiCall<{ data?: { zones?: ZoneOption[] } }>('/zone/zoneList', { method: 'GET', encrypt: false, payload: { page: '1', per_page: '100', search: '' } })
       .then(res => setAllZones(res.data?.zones ?? []))
       .catch(() => {})
   }, [])
@@ -365,8 +363,7 @@ export default function LineMasterPage() {
           pagination?: { total: number; total_pages: number }
         }
       }>('/line/list', {
-        method: 'GET',
-        payload: { search, page: String(page), line_name: '', zone_id: '', branch_id: '' },
+        method: 'GET', encrypt: false, payload: { search, page: String(page), per_page: String(PER_PAGE), line_name: '', zone_id: '', branch_id: '' },
       })
 
       const data = res.data
@@ -388,7 +385,8 @@ export default function LineMasterPage() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      const res = await apiCall<{ message?: string }>('/line/delete', { payload: { uuid: deleteTarget.uuid } })
+      const res = await apiCall<{ success?: boolean; message?: string }>('/line/delete', { payload: { uuid: deleteTarget.uuid } })
+      if (res.success === false) { setToast({ message: res.message || 'Delete failed', type: 'error' }); return }
       setToast({ message: res.message || 'Line deleted successfully', type: 'success' })
       setDeleteTarget(null)
       fetchLines()
@@ -404,84 +402,104 @@ export default function LineMasterPage() {
     fetchLines()
   }
 
-  const columns = [
-    {
-      key: '#',
-      header: '#',
-      render: (_: Line, i: number) => (
-        <span className="text-t-lighter text-xs">{(page - 1) * 30 + i + 1}</span>
-      ),
-    },
-    {
-      key: 'line_name',
-      header: 'Line Name',
-      render: (row: Line) => (
-        <span className="text-[#2DB3A0] font-semibold">{row.line_name}</span>
-      ),
-    },
-    {
-      key: 'company',
-      header: 'Company',
-      render: (row: Line) => (
-        <span className="text-t-body">{row.zone?.company?.company_name ?? '—'}</span>
-      ),
-    },
-    {
-      key: 'branch',
-      header: 'Branch',
-      render: (row: Line) => (
-        <span className="text-t-body">{row.branch?.branch_name ?? row.zone?.branch?.branch_name ?? '—'}</span>
-      ),
-    },
+  // Helpers
+  const getSlots5 = (row: Line) => {
+    const s = (row.slots ?? []).slice(0, 5)
+    while (s.length < 5) s.push({ slot_name: `Slot-${s.length + 1}`, start: '', end: '' })
+    return s
+  }
+
+  const formatTime = (t?: string) => {
+    if (!t) return '—'
+    const [h, m] = t.slice(0, 5).split(':')
+    const hr = parseInt(h)
+    const ampm = hr >= 12 ? 'PM' : 'AM'
+    const h12 = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr
+    return `${h12}:${m} ${ampm}`
+  }
+
+  const renderSlotCell = (slot: Slot) => (
+    slot.start ? (
+      <div className="text-xs2 whitespace-nowrap">
+        <div className="flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-stat-green"></span>
+          <span className="text-t-body">S : {formatTime(slot.start)}</span>
+        </div>
+        <div className="flex items-center gap-1 mt-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-danger"></span>
+          <span className="text-t-body">E : {formatTime(slot.end)}</span>
+        </div>
+      </div>
+    ) : <span className="text-t-lighter">—</span>
+  )
+
+  const columns: AdvancedColumn<Line>[] = [
     {
       key: 'zone',
       header: 'Zone',
-      render: (row: Line) => (
-        <span className="text-t-body">{row.zone?.zone_name ?? '—'}</span>
-      ),
+      sortable: true,
+      render: (row) => <span className="text-t-body">{row.zone?.zone_name ?? '—'}</span>,
     },
     {
-      key: 'slots',
-      header: 'Slots',
-      render: (row: Line) => (
-        <div className="flex flex-wrap gap-1">
-          {row.slots?.map((s, i) => (
-            <Badge key={i} variant="info">
-              {s.slot_name}: {s.start?.slice(0, 5)}-{s.end?.slice(0, 5)}
-            </Badge>
-          )) ?? '—'}
-        </div>
-      ),
+      key: 'line_name',
+      header: 'Line',
+      sortable: true,
+      render: (row) => <span className="text-t-body font-medium">{row.line_name}</span>,
+    },
+    ...([1, 2, 3, 4, 5].map(n => ({
+      key: `slot-${n}`,
+      header: `Slot-${n}`,
+      render: (row: Line) => {
+        const slots5 = getSlots5(row)
+        return renderSlotCell(slots5[n - 1])
+      },
+      className: `!py-2`,
+    })) as AdvancedColumn<Line>[]),
+  ]
+
+  const getActions = (row: Line): ActionItem[] => [
+    {
+      label: 'View',
+      icon: <Eye size={13} />,
+      onClick: () => handleView(row.uuid),
     },
     {
-      key: 'actions',
-      header: '',
-      render: (row: Line) => (
-        <div className="flex gap-1.5 items-center">
-          <button
-            onClick={() => { setEditLine(row); setShowModal(true) }}
-            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter
-              hover:text-[#2DB3A0] transition-colors flex"
-            title="Edit"
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={() => setDeleteTarget(row)}
-            className="bg-transparent border-none cursor-pointer p-1 text-[#FC8181]
-              hover:text-[#E53E3E] transition-colors flex"
-            title="Delete"
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
-      ),
+      label: 'Edit',
+      icon: <Pencil size={13} />,
+      onClick: () => { setEditLine(row); setShowModal(true) },
+    },
+    {
+      label: 'Delete',
+      icon: <Trash2 size={13} />,
+      onClick: () => setDeleteTarget(row),
+      variant: 'danger',
     },
   ]
 
   return (
     <AppLayout>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {viewData && (
+        <ViewModal
+          title="Line Details"
+          loading={viewLoading}
+          onClose={() => setViewData(null)}
+          size="md"
+          fields={[
+            { label: 'Line Name', value: (viewData as Record<string, unknown>).line_name as string },
+            { label: 'Zone', value: ((viewData as Record<string, unknown>).zone as Record<string, unknown>)?.zone_name as string ?? '—' },
+            { label: 'Branch', value: ((viewData as Record<string, unknown>).branch as Record<string, unknown>)?.branch_name as string ?? '—' },
+            { label: 'Company', value: (((viewData as Record<string, unknown>).zone as Record<string, unknown>)?.company as Record<string, unknown>)?.company_name as string ?? '—' },
+            { label: 'Status', value: <Badge variant={(viewData as Record<string, unknown>).status === 1 ? 'success' : 'default'}>{(viewData as Record<string, unknown>).status === 1 ? 'Active' : 'Inactive'}</Badge> },
+            { label: 'Slots', value: ((viewData as Record<string, unknown>).slots as Array<Record<string, unknown>>)?.map((s, i) => (
+              <div key={i} className="text-xs2 mb-1">
+                <span className="font-medium">{s.slot_name as string}:</span> {(s.start as string)?.slice(0, 5)} - {(s.end as string)?.slice(0, 5)}
+              </div>
+            )) ?? '—', fullWidth: true },
+          ]}
+        />
+      )}
 
       {showModal && (
         <LineModal
@@ -507,7 +525,7 @@ export default function LineMasterPage() {
       )}
 
       <Breadcrumb items={[{ label: 'Master' }, { label: 'Line Master', active: true }]} />
-      <PageHeader title="Line Master" description="Manage production lines with zone assignments and time slot configurations." />
+      <PageHeader title="TLS audit trimming master" description="Production line definitions with capacity and supervisor assignment." />
 
       <Toolbar
         title="All Lines"
@@ -517,11 +535,16 @@ export default function LineMasterPage() {
         addLabel="Add Line"
       />
 
-      <DataTable
+      <AdvancedTable
         columns={columns}
         data={lines}
         loading={loading}
         emptyMessage="No lines found"
+        rowKey={(row) => row.uuid}
+        selectable
+        selected={selected}
+        onSelectionChange={setSelected}
+        actions={getActions}
         page={page}
         totalPages={totalPages}
         totalCount={totalCount}
