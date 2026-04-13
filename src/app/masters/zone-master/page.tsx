@@ -2,12 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Eye } from 'lucide-react'
 import { apiCall } from '@/services/apiClient'
+import { PER_PAGE } from '@/lib/constants'
 import Toast, { type ToastData } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import DataTable from '@/components/ui/DataTable'
+import ViewModal from '@/components/ui/ViewModal'
+import Badge from '@/components/ui/Badge'
 import Toolbar from '@/components/ui/Toolbar'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -115,10 +119,12 @@ function ZoneModal({
 
       if (isEdit) {
         payload.id = zone.id
-        const res = await apiCall<{ message?: string }>('/zone/update', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/zone/update', { payload })
+        if (res.success === false) { setErrors({ zone_name: res.message || 'Update failed' }); return }
         onSaved(res.message || 'Zone updated successfully')
       } else {
-        const res = await apiCall<{ message?: string }>('/zone/create', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/zone/create', { payload })
+        if (res.success === false) { setErrors({ zone_name: res.message || 'Creation failed' }); return }
         onSaved(res.message || 'Zone created successfully')
       }
       onClose()
@@ -135,21 +141,10 @@ function ZoneModal({
       onClose={onClose}
       footer={
         <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-[34px] px-[18px] bg-card border border-input-line rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="zone-form"
-            disabled={saving}
-            className="h-[34px] px-[18px] bg-[#2DB3A0] hover:bg-[#26A090] border-none rounded-[5px] text-[13px] text-white font-semibold cursor-pointer font-inherit disabled:opacity-70 transition-colors"
-          >
-            {saving ? 'Saving...' : isEdit ? 'Update Zone' : 'Add Zone'}
-          </button>
+          <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" type="submit" form="zone-form" isLoading={saving}>
+            {isEdit ? 'Update Zone' : 'Add Zone'}
+          </Button>
         </>
       }
     >
@@ -210,14 +205,26 @@ export default function ZoneMasterPage() {
   const [editZone, setEditZone] = useState<Zone | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Zone | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
+  const [viewData, setViewData] = useState<Record<string, unknown> | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+
+  const handleView = async (id: number) => {
+    setViewLoading(true)
+    setViewData({})
+    try {
+      const res = await apiCall<{ data?: Record<string, unknown> }>('/zone/show', { method: 'GET', encrypt: false, payload: { id: String(id) } })
+      setViewData(res.data ?? res)
+    } catch { setViewData(null) }
+    finally { setViewLoading(false) }
+  }
 
   // Fetch dropdown data
   useEffect(() => {
-    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET' })
+    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET', encrypt: false, payload: { page: '1', per_page: '100', search: '' } })
       .then(res => setCompanies(res.data?.companies ?? []))
       .catch(() => {})
 
-    apiCall<{ data?: { branches?: BranchOption[] } }>('/branch/branchList', { method: 'GET' })
+    apiCall<{ data?: { branches?: BranchOption[] } }>('/branch/branchList', { method: 'GET', encrypt: false, payload: { page: '1', per_page: '100', search: '' } })
       .then(res => setAllBranches(res.data?.branches ?? []))
       .catch(() => {})
   }, [])
@@ -231,8 +238,7 @@ export default function ZoneMasterPage() {
           pagination?: { total: number; total_pages: number }
         }
       }>('/zone/zoneList', {
-        method: 'GET',
-        payload: { search, page: String(page) },
+        method: 'GET', encrypt: false, payload: { search, page: String(page), per_page: String(PER_PAGE) },
       })
 
       const data = res.data
@@ -254,7 +260,8 @@ export default function ZoneMasterPage() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      const res = await apiCall<{ message?: string }>('/zone/delete', { payload: { id: deleteTarget.id } })
+      const res = await apiCall<{ success?: boolean; message?: string }>('/zone/delete', { payload: { id: deleteTarget.id } })
+      if (res.success === false) { setToast({ message: res.message || 'Delete failed', type: 'error' }); return }
       setToast({ message: res.message || 'Zone deleted successfully', type: 'success' })
       setDeleteTarget(null)
       fetchZones()
@@ -282,7 +289,7 @@ export default function ZoneMasterPage() {
       key: 'zone_name',
       header: 'Zone Name',
       render: (row: Zone) => (
-        <span className="text-[#2DB3A0] font-semibold">{row.zone_name}</span>
+        <span className="text-accent font-semibold">{row.zone_name}</span>
       ),
     },
     {
@@ -326,15 +333,22 @@ export default function ZoneMasterPage() {
       render: (row: Zone) => (
         <div className="flex gap-1.5 items-center">
           <button
+            onClick={() => handleView(row.id)}
+            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-accent transition-colors flex"
+            title="View"
+          >
+            <Eye size={13} />
+          </button>
+          <button
             onClick={() => { setEditZone(row); setShowModal(true) }}
-            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-[#2DB3A0] transition-colors flex"
+            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-accent transition-colors flex"
             title="Edit"
           >
             <Pencil size={13} />
           </button>
           <button
             onClick={() => setDeleteTarget(row)}
-            className="bg-transparent border-none cursor-pointer p-1 text-[#FC8181] hover:text-[#E53E3E] transition-colors flex"
+            className="bg-transparent border-none cursor-pointer p-1 text-danger-light hover:text-danger transition-colors flex"
             title="Delete"
           >
             <Trash2 size={13} />
@@ -347,6 +361,21 @@ export default function ZoneMasterPage() {
   return (
     <AppLayout>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {viewData && (
+        <ViewModal
+          title="Zone Details"
+          loading={viewLoading}
+          onClose={() => setViewData(null)}
+          fields={[
+            { label: 'Zone Name', value: (viewData as Record<string, unknown>).zone_name as string },
+            { label: 'Zone Code', value: (viewData as Record<string, unknown>).zone_code as string },
+            { label: 'Company', value: ((viewData as Record<string, unknown>).company as Record<string, unknown>)?.company_name as string ?? '—' },
+            { label: 'Branch', value: ((viewData as Record<string, unknown>).branch as Record<string, unknown>)?.branch_name as string ?? '—' },
+            { label: 'Status', value: <Badge variant={(viewData as Record<string, unknown>).status === 1 ? 'success' : 'default'}>{(viewData as Record<string, unknown>).status === 1 ? 'Active' : 'Inactive'}</Badge> },
+          ]}
+        />
+      )}
 
       {showModal && (
         <ZoneModal

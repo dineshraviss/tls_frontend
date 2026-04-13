@@ -21,18 +21,19 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label className="text-[11.5px] font-medium text-t-body">
+          <label className="text-xs font-medium text-t-body">
             {label}
             {required && <span className="text-red-400 ml-0.5">*</span>}
           </label>
         )}
         <select
           ref={ref}
-          className={`w-full h-[34px] px-2.5 text-[12.5px] font-inherit cursor-pointer
+          suppressHydrationWarning
+          className={`w-full h-input-h px-2.5 text-sm2 font-inherit cursor-pointer
             text-t-secondary bg-input
-            border border-input-line rounded-[5px]
+            border border-input-line rounded-input
             outline-none transition-colors
-            focus:border-[#2DB3A0] focus:ring-2 focus:ring-[#2DB3A0]/15
+            focus:border-accent focus:ring-2 focus:ring-focus-ring/15
             disabled:opacity-50 disabled:cursor-not-allowed
             ${showError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/15' : ''}
             ${className}`}
@@ -44,7 +45,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
           ))}
         </select>
         {showError && (
-          <span className="text-[11px] text-red-500 mt-0.5">{error}</span>
+          <span className="text-xs2 text-red-500 mt-0.5">{error}</span>
         )}
       </div>
     )

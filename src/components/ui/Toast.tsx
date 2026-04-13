@@ -22,10 +22,10 @@ export default function Toast({ message, type, onClose }: ToastProps) {
 
   return (
     <div className={`fixed top-5 right-5 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg
-      text-[13px] font-medium min-w-[280px] max-w-[420px] shadow-lg animate-[toastSlideIn_0.3s_ease]
+      text-sm font-medium min-w-[280px] max-w-[420px] shadow-lg animate-[toastSlideIn_0.3s_ease]
       ${isSuccess
-        ? 'bg-[#C6F6D5] border border-[#9AE6B4] text-[#276749]'
-        : 'bg-[#FED7D7] border border-[#FEB2B2] text-[#9B2C2C]'}`}
+        ? 'bg-success-bg border border-success-bg text-success-text'
+        : 'bg-error-bg border border-error-border text-error-text'}`}
     >
       <style>{`
         @keyframes toastSlideIn {

@@ -34,10 +34,88 @@
   --color-table-line: var(--color-table-border);
   --color-input-line: var(--color-input-border);
 
-  /* Status */
+  /* Status colors */
   --color-t-success: var(--color-success);
   --color-t-warning: var(--color-warning);
   --color-t-error: var(--color-error);
+
+  /* Status backgrounds */
+  --color-success-bg: #C6F6D5;
+  --color-success-text: #276749;
+  --color-error-bg: #FED7D7;
+  --color-error-text: #9B2C2C;
+  --color-error-border: #FEB2B2;
+  --color-warning-bg: #FEEBC8;
+  --color-warning-text: #9C4221;
+  --color-info-bg: #EBF8FF;
+  --color-info-text: #2C5282;
+  --color-danger: #E74C3C;
+  --color-danger-hover: #C0392B;
+  --color-danger-light: #FC8181;
+
+  /* Line chip colors (WorkList) */
+  --color-chip-blue-bg: #EBF8FF;
+  --color-chip-blue-text: #2B6CB0;
+  --color-chip-green-bg: #F0FFF4;
+  --color-chip-green-text: #276749;
+  --color-chip-red-bg: #FFF5F5;
+  --color-chip-red-text: #9B2C2C;
+  --color-chip-yellow-bg: #FFFFF0;
+  --color-chip-yellow-text: #7B6F00;
+
+  /* Dashboard stat colors */
+  --color-stat-green: #38A169;
+  --color-stat-orange: #DD6B20;
+
+  /* Badge */
+  --color-info-badge-bg: #BEE3F8;
+  --color-default-badge-bg: #EDF2F7;
+  --color-default-badge-text: #718096;
+
+  /* Button */
+  --color-secondary-btn: #F5A623;
+  --color-secondary-btn-hover: #F7B84A;
+  --color-success-hover: rgba(154, 230, 180, 0.5);
+
+  /* Input (legacy) */
+  --color-input-label: #374151;
+  --color-input-icon: #9CA3AF;
+  --color-input-text: #111827;
+  --color-input-border-legacy: #D1D5DB;
+  --color-input-disabled-bg: #F9FAFB;
+
+  /* Login */
+  --color-login-bg: #C8E8F5;
+
+  /* Focus ring */
+  --color-focus-ring: #2DB3A0;
+  --color-focus-error: #E74C3C;
+
+  /* Font sizes */
+  --font-size-2xs: 10px;
+  --font-size-xs2: 11px;
+  --font-size-xs: 11.5px;
+  --font-size-sm2: 12.5px;
+  --font-size-sm: 13px;
+  --font-size-md: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 22px;
+
+  /* Icon sizes */
+  --spacing-icon-sm: 13px;
+  --spacing-icon-md: 16px;
+  --spacing-icon-lg: 18px;
+
+  /* Spacing / Sizing */
+  --spacing-input-h: 34px;
+  --spacing-btn-px: 18px;
+  --spacing-cell-py: 11px;
+  --spacing-cell-py-sm: 7px;
+  --spacing-sidebar: 240px;
+
+  /* Radius */
+  --radius-input: 5px;
+  --radius-card: 10px;
 }
 
 /* ── Sidebar – must be outside @layer so it wins over Tailwind preflight ── */
@@ -180,5 +258,20 @@
     background-color: var(--color-bg);
     color: var(--color-text);
     transition: background-color 0.3s, color 0.3s;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+
+  /* Allow text selection and cursor only in input fields */
+  input, textarea, [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+  }
+
+  select {
+    user-select: none;
+    cursor: pointer;
   }
 }

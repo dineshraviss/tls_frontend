@@ -17,19 +17,19 @@ const STATUS_VARIANT: Record<StatusType, 'success' | 'error' | 'warning' | 'info
 }
 
 const STATUS_DOT: Record<StatusType, string> = {
-  Normal:          'bg-[#276749]',
-  Problem:         'bg-[#9B2C2C]',
-  Warning:         'bg-[#9C4221]',
-  'Audit Pending': 'bg-[#2C5282]',
+  Normal:          'bg-success-text',
+  Problem:         'bg-error-text',
+  Warning:         'bg-warning-text',
+  'Audit Pending': 'bg-info-text',
 }
 
 // ── Mock data ─────────────────────────────────────────
 const statsCards = [
   { label: 'Active Lines', value: '20', sub: 'Zone 1: 12, Zone 2: 8', borderColor: 'border-t-[#2DB3A0]', subClass: 'text-t-light' },
-  { label: "Today's Output", value: '14,832', sub: '+12% vs target', borderColor: 'border-t-[#3182CE]', subClass: 'text-[#38A169]' },
-  { label: 'Active Defects', value: '7', sub: '3 Critical, 4 Major', borderColor: 'border-t-[#E53E3E]', subClass: 'text-[#E53E3E]' },
-  { label: 'TLS Online', value: '186 / 200', sub: '14 offline', borderColor: 'border-t-[#805AD5]', subClass: 'text-[#DD6B20]' },
-  { label: 'Rework %', value: '6.8%', sub: 'Target: < 5%', borderColor: 'border-t-[#DD6B20]', subClass: 'text-[#E53E3E]' },
+  { label: "Today's Output", value: '14,832', sub: '+12% vs target', borderColor: 'border-t-[#3182CE]', subClass: 'text-stat-green' },
+  { label: 'Active Defects', value: '7', sub: '3 Critical, 4 Major', borderColor: 'border-t-[#E53E3E]', subClass: 'text-danger' },
+  { label: 'TLS Online', value: '186 / 200', sub: '14 offline', borderColor: 'border-t-[#805AD5]', subClass: 'text-stat-orange' },
+  { label: 'Rework %', value: '6.8%', sub: 'Target: < 5%', borderColor: 'border-t-[#DD6B20]', subClass: 'text-danger' },
 ]
 
 const recentOrders = [
@@ -80,9 +80,9 @@ export default function DashboardPage() {
             key={card.label}
             className={`bg-card rounded-lg shadow-sm border-t-[3px] ${card.borderColor} ${isMobile ? 'px-3 py-2.5' : 'px-3.5 py-3'}`}
           >
-            <p className="m-0 mb-1 text-[11px] text-t-light font-medium">{card.label}</p>
+            <p className="m-0 mb-1 text-xs2 text-t-light font-medium">{card.label}</p>
             <p className={`m-0 mb-0.5 font-bold text-t-primary ${isMobile ? 'text-lg' : 'text-xl'}`}>{card.value}</p>
-            <p className={`m-0 text-[11px] ${card.subClass}`}>{card.sub}</p>
+            <p className={`m-0 text-xs2 ${card.subClass}`}>{card.sub}</p>
           </div>
         ))}
       </div>
@@ -93,10 +93,10 @@ export default function DashboardPage() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`${isMobile ? 'px-2.5 py-2 text-xs' : 'px-4 py-2 text-[13px]'}
+            className={`${isMobile ? 'px-2.5 py-2 text-xs' : 'px-4 py-2 text-sm'}
               border-none bg-transparent cursor-pointer font-inherit whitespace-nowrap -mb-px
               ${activeTab === tab
-                ? 'font-semibold text-[#2DB3A0] border-b-2 border-b-[#2DB3A0]'
+                ? 'font-semibold text-accent border-b-2 border-b-[#2DB3A0]'
                 : 'font-normal text-t-light border-b-2 border-b-transparent'}`}
           >
             {tab}
@@ -112,23 +112,23 @@ export default function DashboardPage() {
 
           {/* Recent Orders */}
           <div className="bg-card rounded-lg px-4 py-3.5 shadow-sm">
-            <h3 className="m-0 mb-3 text-[13px] font-semibold text-t-secondary">Recent Orders</h3>
+            <h3 className="m-0 mb-3 text-sm font-semibold text-t-secondary">Recent Orders</h3>
             <div className={`flex gap-2.5 ${isMobile ? 'overflow-x-auto pb-1' : ''}`}>
               {recentOrders.map((o, i) => {
                 const isApproved = o.status === 'Approved'
                 return (
                   <div key={i} className={`border border-header-line rounded-md p-2.5 ${isMobile ? 'flex-shrink-0 w-40' : 'flex-1'} min-w-0`}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[11px] font-semibold text-t-secondary">{o.id}</span>
+                      <span className="text-xs2 font-semibold text-t-secondary">{o.id}</span>
                       <Badge variant={isApproved ? 'success' : 'warning'}>{o.status}</Badge>
                     </div>
-                    <p className="m-0 mb-1.5 text-[11px] text-t-body">{o.name}</p>
+                    <p className="m-0 mb-1.5 text-xs2 text-t-body">{o.name}</p>
                     <div className="h-1 rounded-sm bg-table-line overflow-hidden mb-1">
                       <div className={`h-full bg-accent rounded-sm w-[${o.target}%]`} />
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[10px] text-t-light">Output: {o.output.toLocaleString()}</span>
-                      <span className="text-[10px] text-t-light">{o.target}%</span>
+                      <span className="text-2xs text-t-light">Output: {o.output.toLocaleString()}</span>
+                      <span className="text-2xs text-t-light">{o.target}%</span>
                     </div>
                   </div>
                 )
@@ -139,8 +139,8 @@ export default function DashboardPage() {
           {/* Line Live Status */}
           <div className="bg-card rounded-lg px-4 py-3.5 shadow-sm">
             <div className="flex justify-between items-center mb-2.5">
-              <h3 className="m-0 text-[13px] font-semibold text-t-secondary">Line Live Status</h3>
-              <div className="flex items-center gap-1 px-2.5 py-1 border border-input-line rounded-[5px] cursor-pointer">
+              <h3 className="m-0 text-sm font-semibold text-t-secondary">Line Live Status</h3>
+              <div className="flex items-center gap-1 px-2.5 py-1 border border-input-line rounded-input cursor-pointer">
                 <span className="text-xs text-t-secondary">Zone-1</span>
                 <ChevronDown size={13} className="text-t-light" />
               </div>
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                   onClick={() => setActiveLine(lt)}
                   className={`px-2.5 py-1.5 border-none bg-transparent cursor-pointer text-xs font-inherit whitespace-nowrap -mb-px
                     ${activeLine === lt
-                      ? 'font-semibold text-[#2DB3A0] border-b-2 border-b-[#2DB3A0]'
+                      ? 'font-semibold text-accent border-b-2 border-b-[#2DB3A0]'
                       : 'font-normal text-t-light border-b-2 border-b-transparent'}`}
                 >
                   {lt}
@@ -168,7 +168,7 @@ export default function DashboardPage() {
                 <thead>
                   <tr className="bg-table-head">
                     {['Workstation', 'TLS ID', 'Operation', 'Status', 'Defects'].map(h => (
-                      <th key={h} className="px-2.5 py-[7px] text-left text-t-light font-semibold text-[11px] border-b border-header-line whitespace-nowrap">
+                      <th key={h} className="px-2.5 py-cell-py-sm text-left text-t-light font-semibold text-xs2 border-b border-header-line whitespace-nowrap">
                         {h}
                       </th>
                     ))}
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                       <td className="px-2.5 py-2">
                         {row.defects > 0
                           ? <Badge variant="error">{row.defects}</Badge>
-                          : <span className="text-t-lighter text-[11px]">&mdash;</span>
+                          : <span className="text-t-lighter text-xs2">&mdash;</span>
                         }
                       </td>
                     </tr>
@@ -197,11 +197,11 @@ export default function DashboardPage() {
 
             {/* Colour legend */}
             <div className="flex gap-3 mt-3 pt-2.5 border-t border-table-line flex-wrap">
-              <span className="text-[10px] text-t-light font-semibold">TLS Colour Reference</span>
+              <span className="text-2xs text-t-light font-semibold">TLS Colour Reference</span>
               {(Object.entries(STATUS_DOT) as [StatusType, string][]).map(([label, dotClass]) => (
                 <div key={label} className="flex items-center gap-1">
                   <div className={`w-2.5 h-2.5 rounded-full ${dotClass}`} />
-                  <span className="text-[10px] text-t-light">{label}</span>
+                  <span className="text-2xs text-t-light">{label}</span>
                 </div>
               ))}
             </div>
@@ -211,17 +211,17 @@ export default function DashboardPage() {
         {/* Right column: Quick Setup */}
         <div className={contentStacked ? 'w-full' : 'w-[220px] shrink-0'}>
           <div className="bg-card rounded-lg px-4 py-3.5 shadow-sm">
-            <h3 className="m-0 mb-0.5 text-[13px] font-semibold text-t-secondary">
+            <h3 className="m-0 mb-0.5 text-sm font-semibold text-t-secondary">
               Quick Setup Progress
             </h3>
-            <p className="m-0 mb-3 text-[11px] text-t-lighter">Machine configuration checklist</p>
+            <p className="m-0 mb-3 text-xs2 text-t-lighter">Machine configuration checklist</p>
             <div
               className={contentStacked
                 ? `grid gap-0 ${isMobile ? 'grid-cols-2' : 'grid-cols-3'}`
                 : 'flex flex-col'}
             >
               {setupItems.map((item, i) => (
-                <div key={i} className={`flex justify-between items-center py-[7px] ${i < setupItems.length - 1 ? 'border-b border-table-line' : ''}`}>
+                <div key={i} className={`flex justify-between items-center py-cell-py-sm ${i < setupItems.length - 1 ? 'border-b border-table-line' : ''}`}>
                   <span className="text-xs text-t-body">{item.label}</span>
                   <span className="text-xs font-semibold text-t-secondary bg-table-line rounded px-[7px] py-px min-w-[24px] text-center">
                     {item.count}

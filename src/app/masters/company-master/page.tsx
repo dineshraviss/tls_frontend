@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Eye } from 'lucide-react'
 import { apiCall } from '@/services/apiClient'
+import { PER_PAGE } from '@/lib/constants'
 import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 import Toast, { type ToastData } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import DataTable from '@/components/ui/DataTable'
@@ -16,6 +18,7 @@ import FormInput from '@/components/ui/FormInput'
 import FormTextarea from '@/components/ui/FormTextarea'
 import FormSelect from '@/components/ui/FormSelect'
 import Badge from '@/components/ui/Badge'
+import ViewModal, { type ViewField } from '@/components/ui/ViewModal'
 
 // ── Types ────────────────────────────────────────────
 interface Company {
@@ -130,10 +133,12 @@ function CompanyModal({
 
       if (isEdit) {
         payload.uuid = company.uuid
-        const res = await apiCall<{ message?: string }>('/company/update', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/company/update', { payload })
+        if (res.success === false) { setErrors({ company_name: res.message || 'Update failed' }); return }
         onSaved(res.message || 'Company updated successfully')
       } else {
-        const res = await apiCall<{ message?: string }>('/company/create', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/company/create', { payload })
+        if (res.success === false) { setErrors({ company_name: res.message || 'Creation failed' }); return }
         onSaved(res.message || 'Company created successfully')
       }
       onClose()
@@ -150,24 +155,10 @@ function CompanyModal({
       onClose={onClose}
       footer={
         <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-[34px] px-[18px] bg-card border border-input-line
-              rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="company-form"
-            disabled={saving}
-            className="h-[34px] px-[18px] bg-[#2DB3A0] hover:bg-[#26A090] border-none rounded-[5px]
-              text-[13px] text-white font-semibold cursor-pointer font-inherit
-              disabled:opacity-70 transition-colors"
-          >
-            {saving ? 'Saving...' : isEdit ? 'Update Company' : 'Add Company'}
-          </button>
+          <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" type="submit" form="company-form" isLoading={saving}>
+            {isEdit ? 'Update Company' : 'Add Company'}
+          </Button>
         </>
       }
     >
@@ -263,6 +254,21 @@ export default function CompanyMasterPage() {
   const [editCompany, setEditCompany] = useState<Company | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
+  const [viewData, setViewData] = useState<Record<string, unknown> | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+
+  const handleView = async (id: number) => {
+    setViewLoading(true)
+    setViewData({})
+    try {
+      const res = await apiCall<{ data?: Record<string, unknown> }>('/company/show', { method: 'GET', encrypt: false, payload: { id: String(id) } })
+      setViewData(res.data ?? res)
+    } catch {
+      setViewData(null)
+    } finally {
+      setViewLoading(false)
+    }
+  }
 
   const fetchCompanies = useCallback(async () => {
     setLoading(true)
@@ -272,14 +278,16 @@ export default function CompanyMasterPage() {
           companies?: Company[]
           count?: number
           totalPages?: number
+          pagination?: { total: number; total_pages: number }
         }
-      }>('/company/companyList', { method: 'GET' })
+      }>('/company/companyList', { method: 'GET', encrypt: false, payload: { page: String(page), per_page: String(PER_PAGE), search, company_name: '' } })
 
       const data = res.data
       const rows: Company[] = data?.companies ?? []
       setCompanies(rows)
-      setTotalCount(data?.count ?? rows.length)
-      setTotalPages(data?.totalPages ?? 1)
+      const total = data?.pagination?.total ?? data?.count ?? rows.length
+      setTotalCount(total)
+      setTotalPages(data?.pagination?.total_pages ?? data?.totalPages ?? (Math.ceil(total / PER_PAGE) || 1))
     } catch {
       setCompanies([])
     } finally {
@@ -295,7 +303,8 @@ export default function CompanyMasterPage() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      const res = await apiCall<{ message?: string }>('/company/delete', { payload: { uuid: deleteTarget.uuid } })
+      const res = await apiCall<{ success?: boolean; message?: string }>('/company/delete', { payload: { uuid: deleteTarget.uuid } })
+      if (res.success === false) { setToast({ message: res.message || 'Delete failed', type: 'error' }); return }
       setToast({ message: res.message || 'Company deleted successfully', type: 'success' })
       setDeleteTarget(null)
       fetchCompanies()
@@ -323,7 +332,7 @@ export default function CompanyMasterPage() {
       key: 'company_name',
       header: 'Company Name',
       render: (row: Company) => (
-        <span className="text-[#2DB3A0] font-semibold">{row.company_name}</span>
+        <span className="text-accent font-semibold">{row.company_name}</span>
       ),
     },
     {
@@ -351,7 +360,7 @@ export default function CompanyMasterPage() {
       key: 'location',
       header: 'Location',
       render: (row: Company) => (
-        <span className="text-t-light text-[11px]">
+        <span className="text-t-light text-xs2">
           {row.location?.lat}, {row.location?.lng}
         </span>
       ),
@@ -362,17 +371,25 @@ export default function CompanyMasterPage() {
       render: (row: Company) => (
         <div className="flex gap-1.5 items-center">
           <button
+            onClick={() => handleView((row as unknown as { id: number }).id)}
+            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter
+              hover:text-accent transition-colors flex"
+            title="View"
+          >
+            <Eye size={13} />
+          </button>
+          <button
             onClick={() => { setEditCompany(row); setShowModal(true) }}
             className="bg-transparent border-none cursor-pointer p-1 text-t-lighter
-              hover:text-[#2DB3A0] transition-colors flex"
+              hover:text-accent transition-colors flex"
             title="Edit"
           >
             <Pencil size={13} />
           </button>
           <button
             onClick={() => setDeleteTarget(row)}
-            className="bg-transparent border-none cursor-pointer p-1 text-[#FC8181]
-              hover:text-[#E53E3E] transition-colors flex"
+            className="bg-transparent border-none cursor-pointer p-1 text-danger-light
+              hover:text-danger transition-colors flex"
             title="Delete"
           >
             <Trash2 size={13} />
@@ -385,6 +402,23 @@ export default function CompanyMasterPage() {
   return (
     <AppLayout>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {viewData && (
+        <ViewModal
+          title="Company Details"
+          loading={viewLoading}
+          onClose={() => setViewData(null)}
+          fields={[
+            { label: 'Company Name', value: (viewData as Record<string, unknown>).company_name as string },
+            { label: 'Company Code', value: (viewData as Record<string, unknown>).company_code as string },
+            { label: 'Company Type', value: <Badge variant="info">{(viewData as Record<string, unknown>).company_type as string}</Badge> },
+            { label: 'Max Slot', value: String((viewData as Record<string, unknown>).max_slot ?? '—') },
+            { label: 'Address', value: (viewData as Record<string, unknown>).address as string, fullWidth: true },
+            { label: 'Location', value: `${((viewData as Record<string, unknown>).location as Record<string, unknown>)?.lat ?? '—'}, ${((viewData as Record<string, unknown>).location as Record<string, unknown>)?.lng ?? '—'}` },
+            { label: 'Status', value: <Badge variant={(viewData as Record<string, unknown>).status === 1 ? 'success' : 'default'}>{(viewData as Record<string, unknown>).status === 1 ? 'Active' : 'Inactive'}</Badge> },
+          ]}
+        />
+      )}
 
       {showModal && (
         <CompanyModal

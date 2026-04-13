@@ -39,6 +39,7 @@ interface Shift {
   mrg_break_end: string
   evg_break_start: string
   evg_break_end: string
+  date: string
   status: number
   is_active: number
   branch?: { id: number; branch_name: string }
@@ -71,7 +72,7 @@ const SHIFT_TYPES = [
 ]
 
 // ── Add / Edit Modal ──
-function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
+function ShiftModifyModal({ shift, branches, allZones, onClose, onSaved }: {
   shift: Shift | null
   branches: BranchOption[]
   allZones: ZoneOption[]
@@ -90,6 +91,7 @@ function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
     end_buffer_time: shift?.end_buffer_time?.slice(0, 5) ?? '',
     branch_id: shift?.branch_id?.toString() ?? '',
     zone_id: shift?.zone_id?.toString() ?? '',
+    date: shift?.date ?? '',
     lunch_start: shift?.lunch_start?.slice(0, 5) ?? '',
     lunch_end: shift?.lunch_end?.slice(0, 5) ?? '',
     mrg_break_start: shift?.mrg_break_start?.slice(0, 5) ?? '',
@@ -135,11 +137,11 @@ function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
       const payload: Record<string, unknown> = { ...form }
       if (isEdit) {
         payload.uuid = shift.uuid
-        const res = await apiCall<{ success?: boolean; message?: string }>('/shift/update', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/shiftmodify/update', { payload })
         if (res.success === false) { setErrors({ shift_name: res.message || 'Update failed' }); return }
         onSaved(res.message || 'Shift updated successfully')
       } else {
-        const res = await apiCall<{ success?: boolean; message?: string }>('/shift/create', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/shiftmodify/create', { payload })
         if (res.success === false) { setErrors({ shift_name: res.message || 'Creation failed' }); return }
         onSaved(res.message || 'Shift created successfully')
       }
@@ -157,14 +159,14 @@ function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
 
   return (
     <Modal
-      title={isEdit ? 'Edit Shift' : 'Add Shift'}
+      title={isEdit ? 'Edit Shift' : 'Add Shift Modify'}
       onClose={onClose}
       size="lg"
       footer={
         <>
           <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
           <Button variant="primary" type="submit" form="shift-form" isLoading={saving}>
-            {isEdit ? 'Update Shift' : 'Add Shift'}
+            {isEdit ? 'Update Shift' : 'Add Shift Modify'}
           </Button>
         </>
       }
@@ -195,6 +197,7 @@ function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
               <FormInput label="Hours" value={form.hrs} onChange={e => set('hrs', e.target.value)} onBlur={() => handleBlur('hrs')} placeholder="8" error={errors.hrs} touched={touched.hrs} required />
               <FormInput label="Break (mins)" value={form.breakMins} onChange={e => set('breakMins', e.target.value)} onBlur={() => handleBlur('breakMins')} placeholder="30" error={errors.breakMins} touched={touched.breakMins} required />
             </div>
+            <FormInput label="Date" type="date" value={form.date} onChange={e => set('date', e.target.value)} required />
           </div>
 
           {/* ── Right Column ── */}
@@ -224,7 +227,7 @@ function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
 }
 
 // ── Main Page ──
-export default function ShiftMasterPage() {
+export default function ShiftModifyPage() {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [branches, setBranches] = useState<BranchOption[]>([])
   const [allZones, setAllZones] = useState<ZoneOption[]>([])
@@ -238,7 +241,7 @@ export default function ShiftMasterPage() {
   const [activeTab, setActiveTab] = useState<'Shift(s)' | 'Calendar'>('Shift(s)')
   const [selected, setSelected] = useState<string[]>([])
   const [showModal, setShowModal] = useState(false)
-  const [editShift, setEditShift] = useState<Shift | null>(null)
+  const [editShiftMod, setEditShiftMod] = useState<Shift | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Shift | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
   const [viewData, setViewData] = useState<Record<string, unknown> | null>(null)
@@ -251,10 +254,10 @@ export default function ShiftMasterPage() {
       .then(res => setAllZones(res.data?.zones ?? [])).catch(() => {})
   }, [])
 
-  const fetchShifts = useCallback(async () => {
+  const fetchShiftMods = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await apiCall<{ data?: { shifts?: Shift[]; pagination?: { total: number; total_pages: number } } }>('/shift/list', {
+      const res = await apiCall<{ data?: { shifts?: Shift[]; pagination?: { total: number; total_pages: number } } }>('/shiftmodify/list', {
         method: 'GET', encrypt: false,
         payload: { page: String(page), per_page: String(PER_PAGE), search, branch_id: '' },
       })
@@ -266,27 +269,27 @@ export default function ShiftMasterPage() {
     finally { setLoading(false) }
   }, [search, page])
 
-  useEffect(() => { fetchShifts() }, [fetchShifts])
+  useEffect(() => { fetchShiftMods() }, [fetchShiftMods])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      const res = await apiCall<{ success?: boolean; message?: string }>('/shift/delete', { payload: { uuid: deleteTarget.uuid } })
+      const res = await apiCall<{ success?: boolean; message?: string }>('/shiftmodify/delete', { payload: { uuid: deleteTarget.uuid } })
       if (res.success === false) { setToast({ message: res.message || 'Delete failed', type: 'error' }); return }
       setToast({ message: res.message || 'Shift deleted successfully', type: 'success' })
       setDeleteTarget(null)
-      fetchShifts()
+      fetchShiftMods()
     } catch { setToast({ message: 'Failed to delete shift', type: 'error' }) }
     finally { setDeleting(false) }
   }
 
-  const handleSaved = (msg: string) => { setToast({ message: msg, type: 'success' }); fetchShifts() }
+  const handleSaved = (msg: string) => { setToast({ message: msg, type: 'success' }); fetchShiftMods() }
 
   const handleView = async (uuid: string) => {
     setViewLoading(true); setViewData({})
     try {
-      const res = await apiCall<{ data?: Record<string, unknown> }>('/shift/show', { method: 'GET', encrypt: false, payload: { uuid } })
+      const res = await apiCall<{ data?: Record<string, unknown> }>('/shiftmodify/show', { method: 'GET', encrypt: false, payload: { uuid } })
       setViewData(res.data ?? res)
     } catch { setViewData(null) }
     finally { setViewLoading(false) }
@@ -342,12 +345,13 @@ export default function ShiftMasterPage() {
     { key: 'hrs', header: 'Hrs', render: (row) => <span className="text-t-body font-semibold">{row.hrs}h</span> },
     { key: 'breakMins', header: 'Break', render: (row) => <span className="text-t-body">{row.breakMins}m</span> },
     { key: 'buffer', header: 'Buffer ti...', render: (row) => <span className="text-t-body">{row.start_buffer_time?.slice(0, 5) ?? '—'}</span> },
+    { key: 'date', header: 'Date', render: (row) => <span className="text-t-body text-xs">{row.date ?? '—'}</span> },
     { key: 'status', header: 'Status', render: (row) => <Badge variant={row.is_active === 1 ? 'success' : 'default'}>{row.is_active === 1 ? 'Active' : 'Inactive'}</Badge> },
   ]
 
   const getActions = (row: Shift): ActionItem[] => [
     { label: 'View', icon: <Eye size={13} />, onClick: () => handleView(row.uuid) },
-    { label: 'Edit', icon: <Pencil size={13} />, onClick: () => { setEditShift(row); setShowModal(true) } },
+    { label: 'Edit', icon: <Pencil size={13} />, onClick: () => { setEditShiftMod(row); setShowModal(true) } },
     { label: 'Delete', icon: <Trash2 size={13} />, onClick: () => setDeleteTarget(row), variant: 'danger' },
   ]
 
@@ -357,7 +361,7 @@ export default function ShiftMasterPage() {
 
       {viewData && (
         <ViewModal
-          title="Shift Details"
+          title="Shift Modify Details"
           loading={viewLoading}
           onClose={() => setViewData(null)}
           size="md"
@@ -372,6 +376,7 @@ export default function ShiftMasterPage() {
             { label: 'Break', value: `${(viewData as Record<string, unknown>).breakMins}m` },
             { label: 'Buffer Login', value: ((viewData as Record<string, unknown>).start_buffer_time as string)?.slice(0, 5) ?? '—' },
             { label: 'Buffer Logout', value: ((viewData as Record<string, unknown>).end_buffer_time as string)?.slice(0, 5) ?? '—' },
+            { label: 'Date', value: (viewData as Record<string, unknown>).date as string ?? '—' },
             { label: 'Lunch Start', value: ((viewData as Record<string, unknown>).lunch_start as string)?.slice(0, 5) ?? '—' },
             { label: 'Lunch End', value: ((viewData as Record<string, unknown>).lunch_end as string)?.slice(0, 5) ?? '—' },
             { label: 'Status', value: <Badge variant={(viewData as Record<string, unknown>).is_active === 1 ? 'success' : 'default'}>{(viewData as Record<string, unknown>).is_active === 1 ? 'Active' : 'Inactive'}</Badge> },
@@ -380,8 +385,8 @@ export default function ShiftMasterPage() {
       )}
 
       {showModal && (
-        <ShiftModal
-          shift={editShift}
+        <ShiftModifyModal
+          shift={editShiftMod}
           branches={branches}
           allZones={allZones}
           onClose={() => setShowModal(false)}
@@ -401,8 +406,8 @@ export default function ShiftMasterPage() {
         />
       )}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Shift Master', active: true }]} />
-      <PageHeader title="Shift Master" description="Define factory shifts with working hours and break times." />
+      <Breadcrumb items={[{ label: 'Master' }, { label: 'Shift Modify Master', active: true }]} />
+      <PageHeader title="Shift Modify Master" description="Modify shifts with custom dates and timing adjustments." />
 
       {/* Tabs */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -421,8 +426,8 @@ export default function ShiftMasterPage() {
         <Toolbar
           search={search}
           onSearchChange={val => { setSearch(val); setPage(1) }}
-          onAdd={() => { setEditShift(null); setShowModal(true) }}
-          addLabel="Add Shift"
+          onAdd={() => { setEditShiftMod(null); setShowModal(true) }}
+          addLabel="Add Shift Modify"
         />
       </div>
 

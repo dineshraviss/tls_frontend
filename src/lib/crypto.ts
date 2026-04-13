@@ -1,6 +1,6 @@
 import CryptoJS from 'crypto-js'
 
-const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTO_SECRET_KEY!
+const SECRET_KEY = process.env.CRYPTO_SECRET_KEY as string
 
 export const encrypt = (data: unknown): string =>
   CryptoJS.AES.encrypt(JSON.stringify(data), SECRET_KEY).toString()

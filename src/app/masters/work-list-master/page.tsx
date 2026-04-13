@@ -33,10 +33,10 @@ const workEntries: WorkEntry[] = [
 ]
 
 const LINE_COLORS: Record<string, { bg: string; text: string }> = {
-  'Line-1': { bg: 'bg-[#EBF8FF]', text: 'text-[#2B6CB0]' },
-  'Line-2': { bg: 'bg-[#F0FFF4]', text: 'text-[#276749]' },
-  'Line-3': { bg: 'bg-[#FFF5F5]', text: 'text-[#9B2C2C]' },
-  'Line-4': { bg: 'bg-[#FFFFF0]', text: 'text-[#7B6F00]' },
+  'Line-1': { bg: 'bg-info-bg', text: 'text-chip-blue-text' },
+  'Line-2': { bg: 'bg-chip-green-bg', text: 'text-success-text' },
+  'Line-3': { bg: 'bg-chip-red-bg', text: 'text-error-text' },
+  'Line-4': { bg: 'bg-chip-yellow-bg', text: 'text-chip-yellow-text' },
 }
 
 const lineChip = (line: string) => LINE_COLORS[line] ?? { bg: 'bg-card-alt', text: 'text-t-body' }
@@ -71,7 +71,7 @@ export default function WorkListMasterPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3.5 py-1.5 border-none rounded-[5px] cursor-pointer text-[12.5px] font-inherit
+                className={`px-3.5 py-1.5 border-none rounded-input cursor-pointer text-sm2 font-inherit
                   ${activeTab === tab ? 'bg-accent/10 font-semibold text-accent' : 'bg-transparent font-normal text-t-light'}`}
               >
                 {tab}
@@ -84,7 +84,7 @@ export default function WorkListMasterPage() {
               onSearchChange={setSearch}
               showExport={true}
             />
-            <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-[5px] cursor-pointer text-[12.5px] text-t-body font-inherit hover:bg-table-head">
+            <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-input cursor-pointer text-sm2 text-t-body font-inherit hover:bg-table-head">
               <SlidersHorizontal size={13} /> Filter
             </button>
           </div>
@@ -92,7 +92,7 @@ export default function WorkListMasterPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[12.5px]">
+          <table className="w-full border-collapse text-sm2">
             <thead>
               <tr className="bg-table-head">
                 <th className="px-3.5 py-2.5 border-b border-header-line w-10">
@@ -107,28 +107,28 @@ export default function WorkListMasterPage() {
                   </div>
                 </th>
                 {['Sn.', 'Shift Name', 'Role', 'Emp ID', 'Title', 'Name'].map(h => (
-                  <th key={h} className="px-3.5 py-2.5 text-left font-semibold text-[11.5px] text-t-light border-b border-header-line whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-3.5 py-2.5 text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap">{h}</th>
                 ))}
                 <th
                   onClick={() => setSortLinesAsc(v => !v)}
-                  className="px-3.5 py-2.5 text-left font-semibold text-[11.5px] text-t-light border-b border-header-line whitespace-nowrap cursor-pointer select-none"
+                  className="px-3.5 py-2.5 text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap cursor-pointer select-none"
                 >
                   <div className="flex items-center gap-1">
                     Lines
                     <ArrowUp size={12} className={`transition-transform duration-200 ${sortLinesAsc ? '' : 'rotate-180'}`} />
                   </div>
                 </th>
-                <th className="px-3.5 py-2.5 text-left font-semibold text-[11.5px] text-t-light border-b border-header-line whitespace-nowrap">Status</th>
+                <th className="px-3.5 py-2.5 text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="p-8 text-center text-t-lighter text-[13px]">No records found</td></tr>
+                <tr><td colSpan={9} className="p-8 text-center text-t-lighter text-sm">No records found</td></tr>
               ) : filtered.map((entry, i) => {
                 const isChecked = selected.includes(entry.id)
                 return (
                   <tr key={entry.id} className={`border-b border-table-line ${isChecked ? 'bg-accent/[0.04]' : i % 2 === 0 ? 'bg-card' : 'bg-card-alt'}`}>
-                    <td className="px-3.5 py-[11px]">
+                    <td className="px-3.5 py-cell-py">
                       <div
                         onClick={() => toggleRow(entry.id)}
                         className={`w-3.5 h-3.5 rounded-sm border-[1.5px] cursor-pointer shrink-0 flex items-center justify-center
@@ -139,25 +139,25 @@ export default function WorkListMasterPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3.5 py-[11px] text-t-lighter text-xs">{entry.id}</td>
-                    <td className="px-3.5 py-[11px] text-accent font-semibold">{entry.shiftName}</td>
-                    <td className="px-3.5 py-[11px] text-t-body">{entry.role}</td>
-                    <td className="px-3.5 py-[11px] font-mono text-xs text-t-body">{entry.empId}</td>
-                    <td className="px-3.5 py-[11px] font-mono text-xs text-t-body">{entry.title}</td>
-                    <td className="px-3.5 py-[11px] text-t-secondary font-medium">{entry.name}</td>
-                    <td className="px-3.5 py-[11px]">
+                    <td className="px-3.5 py-cell-py text-t-lighter text-xs">{entry.id}</td>
+                    <td className="px-3.5 py-cell-py text-accent font-semibold">{entry.shiftName}</td>
+                    <td className="px-3.5 py-cell-py text-t-body">{entry.role}</td>
+                    <td className="px-3.5 py-cell-py font-mono text-xs text-t-body">{entry.empId}</td>
+                    <td className="px-3.5 py-cell-py font-mono text-xs text-t-body">{entry.title}</td>
+                    <td className="px-3.5 py-cell-py text-t-secondary font-medium">{entry.name}</td>
+                    <td className="px-3.5 py-cell-py">
                       <div className="flex flex-wrap gap-1">
                         {entry.lines.map(line => {
                           const c = lineChip(line)
                           return (
-                            <span key={line} className={`inline-block px-2 py-0.5 rounded-[10px] text-[11px] font-medium whitespace-nowrap ${c.bg} ${c.text}`}>
+                            <span key={line} className={`inline-block px-2 py-0.5 rounded-card text-xs2 font-medium whitespace-nowrap ${c.bg} ${c.text}`}>
                               {line}
                             </span>
                           )
                         })}
                       </div>
                     </td>
-                    <td className="px-3.5 py-[11px]">
+                    <td className="px-3.5 py-cell-py">
                       <Badge variant={entry.status === 'Active' ? 'success' : 'default'}>{entry.status}</Badge>
                     </td>
                   </tr>

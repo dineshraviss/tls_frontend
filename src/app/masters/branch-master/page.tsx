@@ -2,12 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Eye } from 'lucide-react'
+import Button from '@/components/ui/Button'
 import { apiCall } from '@/services/apiClient'
+import { PER_PAGE } from '@/lib/constants'
 import Toast, { type ToastData } from '@/components/ui/Toast'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import DataTable from '@/components/ui/DataTable'
+import ViewModal from '@/components/ui/ViewModal'
+import Badge from '@/components/ui/Badge'
 import Toolbar from '@/components/ui/Toolbar'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -72,6 +76,18 @@ export default function BranchMasterPage() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const [toast, setToast] = useState<ToastData | null>(null)
+  const [viewData, setViewData] = useState<Record<string, unknown> | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+
+  const handleView = async (uuid: string) => {
+    setViewLoading(true)
+    setViewData({})
+    try {
+      const res = await apiCall<{ data?: Record<string, unknown> }>('/branch/show', { method: 'GET', encrypt: false, payload: { uuid } })
+      setViewData(res.data ?? res)
+    } catch { setViewData(null) }
+    finally { setViewLoading(false) }
+  }
 
   const set = (key: FormField, val: string) => {
     setForm(f => ({ ...f, [key]: val }))
@@ -87,7 +103,7 @@ export default function BranchMasterPage() {
 
   // Fetch companies for dropdown
   useEffect(() => {
-    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET' })
+    apiCall<{ data?: { companies?: CompanyOption[] } }>('/company/companyList', { method: 'GET', encrypt: false, payload: { page: '1', per_page: '100', search: '' } })
       .then(res => setCompanies(res.data?.companies ?? []))
       .catch(() => {})
   }, [])
@@ -95,20 +111,20 @@ export default function BranchMasterPage() {
   const fetchBranches = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await apiCall<{ data?: { branches?: Branch[]; count?: number; totalPages?: number } }>(
-        '/branch/branchList', { method: 'GET' }
+      const res = await apiCall<{ data?: { branches?: Branch[]; pagination?: { total: number; total_pages: number } } }>(
+        '/branch/branchList', { method: 'GET', encrypt: false, payload: { page: String(page), per_page: String(PER_PAGE), search, branch_name: '', branch_code: '', factory_id: '' } }
       )
       const nested = res.data
       const rows = nested?.branches ?? []
       setBranches(rows)
-      setTotalCount(nested?.count ?? rows.length)
-      setTotalPages(nested?.totalPages ?? 1)
+      setTotalCount(nested?.pagination?.total ?? rows.length)
+      setTotalPages(nested?.pagination?.total_pages ?? 1)
     } catch {
       setBranches([])
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page, search])
 
   useEffect(() => { fetchBranches() }, [fetchBranches])
 
@@ -168,10 +184,12 @@ export default function BranchMasterPage() {
       }
       if (editBranch) {
         payload.uuid = editBranch.uuid
-        const res = await apiCall<{ message?: string }>('/branch/update', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/branch/update', { payload })
+        if (res.success === false) { setFormError(res.message || 'Update failed'); return }
         setToast({ message: res.message || 'Branch updated successfully', type: 'success' })
       } else {
-        const res = await apiCall<{ message?: string }>('/branch/create', { payload })
+        const res = await apiCall<{ success?: boolean; message?: string }>('/branch/create', { payload })
+        if (res.success === false) { setFormError(res.message || 'Creation failed'); return }
         setToast({ message: res.message || 'Branch created successfully', type: 'success' })
       }
       closeModal()
@@ -189,7 +207,8 @@ export default function BranchMasterPage() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      const res = await apiCall<{ message?: string }>('/branch/delete', { payload: { uuid: deleteTarget.uuid } })
+      const res = await apiCall<{ success?: boolean; message?: string }>('/branch/delete', { payload: { uuid: deleteTarget.uuid } })
+      if (res.success === false) { setToast({ message: res.message || 'Delete failed', type: 'error' }); return }
       setToast({ message: res.message || 'Branch deleted successfully', type: 'success' })
       setDeleteTarget(null)
       fetchBranches()
@@ -214,7 +233,7 @@ export default function BranchMasterPage() {
       key: 'branch_name',
       header: 'Branch Name',
       render: (row: Branch) => (
-        <span className="text-[#2DB3A0] font-semibold">{row.branch_name}</span>
+        <span className="text-accent font-semibold">{row.branch_name}</span>
       ),
     },
     {
@@ -253,8 +272,15 @@ export default function BranchMasterPage() {
       render: (row: Branch) => (
         <div className="flex gap-1.5 items-center">
           <button
+            onClick={() => handleView(row.uuid)}
+            className="bg-transparent border-none cursor-pointer p-1 flex items-center text-t-lighter hover:text-accent"
+            title="View"
+          >
+            <Eye size={13} />
+          </button>
+          <button
             onClick={() => openEdit(row)}
-            className="bg-transparent border-none cursor-pointer p-1 flex items-center text-t-lighter hover:text-[#2DB3A0]"
+            className="bg-transparent border-none cursor-pointer p-1 flex items-center text-t-lighter hover:text-accent"
             title="Edit"
           >
             <Pencil size={13} />
@@ -280,25 +306,10 @@ export default function BranchMasterPage() {
   // ── Modal footer ───────────────────────────────────
   const modalFooter = (
     <>
-      <button
-        type="button"
-        onClick={closeModal}
-        className="h-[34px] px-[18px] bg-card border border-input-line
-          rounded-[5px] text-[13px] text-t-body cursor-pointer font-inherit
-          hover:bg-table-head"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        form="branch-form"
-        disabled={saving}
-        className="h-[34px] px-[18px] bg-[#2DB3A0] hover:bg-[#26A090] border-none rounded-[5px]
-          text-[13px] text-white font-semibold cursor-pointer font-inherit
-          disabled:opacity-70 transition-colors"
-      >
-        {saving ? 'Saving...' : editBranch ? 'Update Branch' : 'Add Branch'}
-      </button>
+      <Button variant="outline" type="button" onClick={closeModal}>Cancel</Button>
+      <Button variant="primary" type="submit" form="branch-form" isLoading={saving}>
+        {editBranch ? 'Update Branch' : 'Add Branch'}
+      </Button>
     </>
   )
 
@@ -334,6 +345,23 @@ export default function BranchMasterPage() {
         countLabel="branch"
       />
 
+      {/* View Modal */}
+      {viewData && (
+        <ViewModal
+          title="Branch Details"
+          loading={viewLoading}
+          onClose={() => setViewData(null)}
+          fields={[
+            { label: 'Branch Name', value: (viewData as Record<string, unknown>).branch_name as string },
+            { label: 'Branch Code', value: (viewData as Record<string, unknown>).branch_code as string },
+            { label: 'Company', value: ((viewData as Record<string, unknown>).company as Record<string, unknown>)?.company_name as string ?? '—' },
+            { label: 'Company Code', value: ((viewData as Record<string, unknown>).company as Record<string, unknown>)?.company_code as string ?? '—' },
+            { label: 'Address', value: (viewData as Record<string, unknown>).address as string, fullWidth: true },
+            { label: 'Status', value: <Badge variant={(viewData as Record<string, unknown>).status === 1 ? 'success' : 'default'}>{(viewData as Record<string, unknown>).status === 1 ? 'Active' : 'Inactive'}</Badge> },
+          ]}
+        />
+      )}
+
       {/* Add / Edit Modal */}
       {showModal && (
         <Modal
@@ -342,7 +370,7 @@ export default function BranchMasterPage() {
           footer={modalFooter}
         >
           {formError && (
-            <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-[5px] text-xs text-red-700">
+            <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
               {formError}
             </div>
           )}

@@ -3,14 +3,18 @@ import { getAuthToken } from '@/lib/cookies'
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   payload?: Record<string, unknown>
+  encrypt?: boolean
 }
 
 export async function apiCall<T = Record<string, unknown>>(
   endpoint: string,
   options: ApiOptions = {}
 ): Promise<T> {
-  const { method = 'POST', payload } = options
+  const { method = 'POST', payload, encrypt } = options
   const token = getAuthToken()
+
+  // GET requests don't encrypt, POST/PUT/PATCH encrypt by default
+  const shouldEncrypt = encrypt ?? (method !== 'GET')
 
   const res = await fetch('/api/proxy', {
     method: 'POST',
@@ -18,7 +22,7 @@ export async function apiCall<T = Record<string, unknown>>(
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ endpoint, method, payload }),
+    body: JSON.stringify({ endpoint, method, payload, encrypt: shouldEncrypt }),
   })
 
   const data = await res.json()

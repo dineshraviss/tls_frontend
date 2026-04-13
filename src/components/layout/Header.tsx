@@ -69,10 +69,10 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
           </button>
         )}
         <div>
-          <h1 className={`m-0 font-bold text-t-primary leading-tight ${isMobile ? 'text-[13px]' : 'text-[15px]'}`}>
+          <h1 className={`m-0 font-bold text-t-primary leading-tight ${isMobile ? 'text-sm' : 'text-md'}`}>
             Operations Dashboard
           </h1>
-          {!isMobile && <p className="m-0 text-[11px] text-t-lighter">Line Real-time monitoring</p>}
+          {!isMobile && <p className="m-0 text-xs2 text-t-lighter">Line Real-time monitoring</p>}
         </div>
       </div>
 
@@ -107,7 +107,7 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
         <div ref={dropdownRef} className="relative">
           <div
             onClick={() => setDropdownOpen(v => !v)}
-            className={`flex items-center cursor-pointer ${isMobile ? 'gap-1.5' : 'gap-2'}`}
+            className={`flex items-center cursor-pointer select-none ${isMobile ? 'gap-1.5' : 'gap-2'}`}
           >
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center shrink-0">
               <span className="text-white text-xs font-semibold">{initials}</span>
@@ -115,7 +115,7 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
             {!isMobile && (
               <div>
                 <p className="m-0 text-xs font-semibold text-t-secondary leading-tight">{userName}</p>
-                <p className="m-0 text-[10px] text-t-lighter">{userRole}</p>
+                <p className="m-0 text-2xs text-t-lighter">{userRole}</p>
               </div>
             )}
             <ChevronDown
@@ -126,14 +126,14 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
 
           {/* Dropdown menu */}
           {dropdownOpen && (
-            <div className="absolute top-[calc(100%+8px)] right-0 bg-dropdown rounded-lg shadow-lg border border-t-border min-w-[180px] z-[200] overflow-hidden">
+            <div className="absolute top-[calc(100%+8px)] right-0 bg-dropdown rounded-lg shadow-lg border border-t-border min-w-[180px] z-[200] overflow-hidden select-none">
               <div className="px-3.5 py-3 border-b border-table-line">
-                <p className="m-0 text-[13px] font-semibold text-t-secondary">{userName}</p>
-                <p className="m-0 mt-0.5 text-[11px] text-t-lighter">{userRole}</p>
+                <p className="m-0 text-sm font-semibold text-t-secondary">{userName}</p>
+                <p className="m-0 mt-0.5 text-xs2 text-t-lighter">{userRole}</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full px-3.5 py-2.5 bg-transparent border-none cursor-pointer flex items-center gap-2 text-[13px] text-red-500 font-medium font-inherit hover:bg-red-50 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-transparent border-none cursor-pointer flex items-center gap-2 text-sm text-red-500 font-medium font-inherit hover:bg-red-50 transition-colors"
               >
                 <LogOut size={14} />
                 Logout
