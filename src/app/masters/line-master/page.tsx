@@ -7,7 +7,6 @@ import { apiCall } from '@/services/apiClient'
 import { PER_PAGE } from '@/lib/constants'
 import Toast, { type ToastData } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Toolbar from '@/components/ui/Toolbar'
 import Modal from '@/components/ui/Modal'
@@ -316,6 +315,7 @@ export default function LineMasterPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [perPage, setPerPage] = useState(PER_PAGE)
   const [deleting, setDeleting] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
 
@@ -363,7 +363,7 @@ export default function LineMasterPage() {
           pagination?: { total: number; total_pages: number }
         }
       }>('/line/list', {
-        method: 'GET', encrypt: false, payload: { search, page: String(page), per_page: String(PER_PAGE), line_name: '', zone_id: '', branch_id: '' },
+        method: 'GET', encrypt: false, payload: { search, page: String(page), per_page: String(perPage), line_name: '', zone_id: '', branch_id: '' },
       })
 
       const data = res.data
@@ -375,7 +375,7 @@ export default function LineMasterPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, page])
+  }, [search, page, perPage])
 
   useEffect(() => {
     fetchLines()
@@ -524,7 +524,6 @@ export default function LineMasterPage() {
         />
       )}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Line Master', active: true }]} />
       <PageHeader title="TLS audit trimming master" description="Production line definitions with capacity and supervisor assignment." />
 
       <Toolbar
@@ -549,6 +548,7 @@ export default function LineMasterPage() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={setPage}
+        onPerPageChange={setPerPage}
         countLabel="line"
       />
     </AppLayout>

@@ -32,7 +32,7 @@ export default function ConfirmDialog({
       <div onClick={onClose} className="absolute inset-0 bg-black/50" />
       {/* Dialog */}
       <div className="relative z-[1] bg-[var(--color-modal-bg)] rounded-card
-        w-[calc(100vw-32px)] max-w-[380px] shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-6"
+        w-[calc(100vw-16px)] sm:w-[calc(100vw-32px)] max-w-[380px] shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-6"
       >
         <h3 className="m-0 mb-2 text-md font-bold text-[var(--color-text-primary)]">{title}</h3>
         <div className="mb-5 text-sm text-[var(--color-text-light)]">{message}</div>

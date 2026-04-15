@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Button from '@/components/ui/Button'
 import AppLayout from '@/components/layout/AppLayout'
 import { Search, Download, Upload, Plus, Pencil, Trash2, X, QrCode, ArrowRight, ChevronDown } from 'lucide-react'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Modal from '@/components/ui/Modal'
 import FormInput from '@/components/ui/FormInput'
@@ -172,7 +171,6 @@ export default function MachineHubPage() {
       {showQR && <QRCodeModal spec={showQR} onClose={() => setShowQR(null)} />}
       {showAddOp && <AddOperationModal machineTypeName={selected.name} onClose={() => setShowAddOp(false)} onSave={addOperation} />}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Machine Hub', active: true }]} />
 
       <PageHeader title="Machine Hub" description="Assign operations to a style with SAM values, sequence & manning.">
         <div className="flex gap-2 items-center">

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Button from '@/components/ui/Button'
 import AppLayout from '@/components/layout/AppLayout'
 import { ArrowRight } from 'lucide-react'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Toolbar from '@/components/ui/Toolbar'
 import DataTable from '@/components/ui/DataTable'
@@ -99,7 +98,6 @@ export default function OperationMasterPage() {
     <AppLayout>
       {showModal && <AddOperationModal onClose={() => setShowModal(false)} onSave={handleSave} />}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Operation Master', active: true }]} />
       <PageHeader title="Operation Master" description="Define sewing operations, machine types, insertion rates and possible defects." />
 
       <Toolbar

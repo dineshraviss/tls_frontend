@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { SlidersHorizontal, ArrowUp } from 'lucide-react'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Toolbar from '@/components/ui/Toolbar'
 import Badge from '@/components/ui/Badge'
@@ -60,7 +59,6 @@ export default function WorkListMasterPage() {
 
   return (
     <AppLayout>
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Work List Master', active: true }]} />
       <PageHeader title="Work List Master" description="Define work types and department assignments for employees." />
 
       <div className="bg-card rounded-lg shadow-sm overflow-hidden">

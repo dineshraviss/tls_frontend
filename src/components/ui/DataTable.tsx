@@ -20,13 +20,14 @@ interface DataTableProps<T> {
   totalCount?: number
   perPage?: number
   onPageChange?: (page: number) => void
+  onPerPageChange?: (perPage: number) => void
   countLabel?: string
 }
 
 export default function DataTable<T>({
   columns, data, loading, emptyMessage = 'No records found',
   page = 1, totalPages = 1, totalCount = 0, perPage = PER_PAGE,
-  onPageChange, countLabel = 'record',
+  onPageChange, onPerPageChange, countLabel = 'record',
 }: DataTableProps<T>) {
   return (
     <div className="bg-card rounded-card shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden border border-header-line">
@@ -87,6 +88,7 @@ export default function DataTable<T>({
           totalCount={totalCount}
           perPage={perPage}
           onPageChange={onPageChange}
+          onPerPageChange={onPerPageChange}
           countLabel={countLabel}
         />
       ) : (

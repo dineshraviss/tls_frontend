@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
+import IconButton from '@/components/ui/IconButton'
 import { Pencil, Trash2, Eye } from 'lucide-react'
 import { apiCall } from '@/services/apiClient'
 import { PER_PAGE } from '@/lib/constants'
 import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 import Toast, { type ToastData } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import DataTable from '@/components/ui/DataTable'
 import Toolbar from '@/components/ui/Toolbar'
@@ -219,6 +219,7 @@ export default function EmployeeMasterPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [perPage, setPerPage] = useState(PER_PAGE)
   const [deleting, setDeleting] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
@@ -245,7 +246,7 @@ export default function EmployeeMasterPage() {
         data?: { employees?: Employee[]; pagination?: { total: number; total_pages: number } }
       }>('/employee/list', {
         method: 'GET', encrypt: false,
-        payload: { page: String(page), per_page: String(PER_PAGE), search, branch_id: '', role: '', name: '' },
+        payload: { page: String(page), per_page: String(perPage), search, branch_id: '', role: '', name: '' },
       })
       const data = res.data
       setEmployees(data?.employees ?? [])
@@ -253,7 +254,7 @@ export default function EmployeeMasterPage() {
       setTotalPages(data?.pagination?.total_pages ?? 1)
     } catch { setEmployees([]) }
     finally { setLoading(false) }
-  }, [search, page])
+  }, [search, page, perPage])
 
   useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
@@ -295,9 +296,9 @@ export default function EmployeeMasterPage() {
       key: 'actions', header: '',
       render: (row: Employee) => (
         <div className="flex gap-1.5 items-center">
-          <button onClick={() => handleView(row.uuid)} className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-accent transition-colors flex" title="View"><Eye size={13} /></button>
-          <button onClick={() => { setEditEmp(row); setShowModal(true) }} className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-accent transition-colors flex" title="Edit"><Pencil size={13} /></button>
-          <button onClick={() => setDeleteTarget(row)} className="bg-transparent border-none cursor-pointer p-1 text-danger-light hover:text-danger transition-colors flex" title="Delete"><Trash2 size={13} /></button>
+          <IconButton variant="accent" onClick={() => handleView(row.uuid)} title="View"><Eye size={13} /></IconButton>
+          <IconButton variant="accent" onClick={() => { setEditEmp(row); setShowModal(true) }} title="Edit"><Pencil size={13} /></IconButton>
+          <IconButton variant="danger" onClick={() => setDeleteTarget(row)} title="Delete"><Trash2 size={13} /></IconButton>
         </div>
       ),
     },
@@ -350,7 +351,6 @@ export default function EmployeeMasterPage() {
         />
       )}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Employee Master', active: true }]} />
       <PageHeader title="Employee Master" description="Manage employees, roles, departments and branch assignments." />
 
       <Toolbar
@@ -370,6 +370,7 @@ export default function EmployeeMasterPage() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={setPage}
+        onPerPageChange={setPerPage}
         countLabel="employee"
       />
     </AppLayout>

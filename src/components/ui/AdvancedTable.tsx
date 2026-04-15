@@ -36,6 +36,7 @@ interface AdvancedTableProps<T> {
   totalCount?: number
   perPage?: number
   onPageChange?: (page: number) => void
+  onPerPageChange?: (perPage: number) => void
   countLabel?: string
   onSort?: (key: string, direction: 'asc' | 'desc') => void
 }
@@ -44,7 +45,7 @@ export default function AdvancedTable<T>({
   columns, data, loading, emptyMessage = 'No records found',
   rowKey, selectable = false, selected = [], onSelectionChange,
   actions, page = 1, totalPages = 1, totalCount = 0, perPage = PER_PAGE,
-  onPageChange, countLabel = 'record', onSort,
+  onPageChange, onPerPageChange, countLabel = 'record', onSort,
 }: AdvancedTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -217,6 +218,7 @@ export default function AdvancedTable<T>({
           totalCount={totalCount}
           perPage={perPage}
           onPageChange={onPageChange}
+          onPerPageChange={onPerPageChange}
           countLabel={countLabel}
         />
       ) : (

@@ -25,7 +25,7 @@ const STATUS_DOT: Record<StatusType, string> = {
 
 // ── Mock data ─────────────────────────────────────────
 const statsCards = [
-  { label: 'Active Lines', value: '20', sub: 'Zone 1: 12, Zone 2: 8', borderColor: 'border-t-[#2DB3A0]', subClass: 'text-t-light' },
+  { label: 'Active Lines', value: '20', sub: 'Zone 1: 12, Zone 2: 8', borderColor: 'border-t-[#0D939D]', subClass: 'text-t-light' },
   { label: "Today's Output", value: '14,832', sub: '+12% vs target', borderColor: 'border-t-[#3182CE]', subClass: 'text-stat-green' },
   { label: 'Active Defects', value: '7', sub: '3 Critical, 4 Major', borderColor: 'border-t-[#E53E3E]', subClass: 'text-danger' },
   { label: 'TLS Online', value: '186 / 200', sub: '14 offline', borderColor: 'border-t-[#805AD5]', subClass: 'text-stat-orange' },
@@ -96,7 +96,7 @@ export default function DashboardPage() {
             className={`${isMobile ? 'px-2.5 py-2 text-xs' : 'px-4 py-2 text-sm'}
               border-none bg-transparent cursor-pointer font-inherit whitespace-nowrap -mb-px
               ${activeTab === tab
-                ? 'font-semibold text-accent border-b-2 border-b-[#2DB3A0]'
+                ? 'font-semibold text-accent border-b-2 border-b-[#0D939D]'
                 : 'font-normal text-t-light border-b-2 border-b-transparent'}`}
           >
             {tab}
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                   onClick={() => setActiveLine(lt)}
                   className={`px-2.5 py-1.5 border-none bg-transparent cursor-pointer text-xs font-inherit whitespace-nowrap -mb-px
                     ${activeLine === lt
-                      ? 'font-semibold text-accent border-b-2 border-b-[#2DB3A0]'
+                      ? 'font-semibold text-accent border-b-2 border-b-[#0D939D]'
                       : 'font-normal text-t-light border-b-2 border-b-transparent'}`}
                 >
                   {lt}

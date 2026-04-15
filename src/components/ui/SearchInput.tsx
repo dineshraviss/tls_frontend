@@ -21,7 +21,7 @@ export default function SearchInput({
         value={value}
         onChange={e => onChange(e.target.value)}
         suppressHydrationWarning
-        className="h-8 w-40 pl-7 pr-8 text-sm2 font-inherit cursor-default
+        className="h-8 w-full sm:w-40 pl-7 pr-8 text-sm2 font-inherit cursor-default
           text-t-secondary bg-table-head
           border border-header-line rounded-input
           outline-none transition-colors

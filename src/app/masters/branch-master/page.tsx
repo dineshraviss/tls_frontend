@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
+import IconButton from '@/components/ui/IconButton'
 import { Pencil, Trash2, Eye } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { apiCall } from '@/services/apiClient'
 import { PER_PAGE } from '@/lib/constants'
 import Toast, { type ToastData } from '@/components/ui/Toast'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import DataTable from '@/components/ui/DataTable'
 import ViewModal from '@/components/ui/ViewModal'
@@ -63,6 +63,7 @@ export default function BranchMasterPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [perPage, setPerPage] = useState(PER_PAGE)
 
   const [showModal, setShowModal] = useState(false)
   const [editBranch, setEditBranch] = useState<Branch | null>(null)
@@ -112,7 +113,7 @@ export default function BranchMasterPage() {
     setLoading(true)
     try {
       const res = await apiCall<{ data?: { branches?: Branch[]; pagination?: { total: number; total_pages: number } } }>(
-        '/branch/branchList', { method: 'GET', encrypt: false, payload: { page: String(page), per_page: String(PER_PAGE), search, branch_name: '', branch_code: '', factory_id: '' } }
+        '/branch/branchList', { method: 'GET', encrypt: false, payload: { page: String(page), per_page: String(perPage), search, branch_name: '', branch_code: '', factory_id: '' } }
       )
       const nested = res.data
       const rows = nested?.branches ?? []
@@ -271,27 +272,9 @@ export default function BranchMasterPage() {
       header: '',
       render: (row: Branch) => (
         <div className="flex gap-1.5 items-center">
-          <button
-            onClick={() => handleView(row.uuid)}
-            className="bg-transparent border-none cursor-pointer p-1 flex items-center text-t-lighter hover:text-accent"
-            title="View"
-          >
-            <Eye size={13} />
-          </button>
-          <button
-            onClick={() => openEdit(row)}
-            className="bg-transparent border-none cursor-pointer p-1 flex items-center text-t-lighter hover:text-accent"
-            title="Edit"
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={() => setDeleteTarget(row)}
-            className="bg-transparent border-none cursor-pointer p-1 flex items-center text-red-400 hover:text-red-500"
-            title="Delete"
-          >
-            <Trash2 size={13} />
-          </button>
+          <IconButton variant="accent" onClick={() => handleView(row.uuid)} title="View"><Eye size={13} /></IconButton>
+          <IconButton variant="accent" onClick={() => openEdit(row)} title="Edit"><Pencil size={13} /></IconButton>
+          <IconButton variant="danger" onClick={() => setDeleteTarget(row)} title="Delete"><Trash2 size={13} /></IconButton>
         </div>
       ),
     },
@@ -317,7 +300,6 @@ export default function BranchMasterPage() {
     <AppLayout>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Branch Master', active: true }]} />
 
       <PageHeader
         title="Branch Master"
@@ -342,6 +324,7 @@ export default function BranchMasterPage() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={setPage}
+        onPerPageChange={setPerPage}
         countLabel="branch"
       />
 

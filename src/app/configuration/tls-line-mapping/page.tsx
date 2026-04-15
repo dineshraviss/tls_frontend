@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { MoreVertical } from 'lucide-react'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Toolbar from '@/components/ui/Toolbar'
 import DataTable from '@/components/ui/DataTable'
@@ -51,7 +50,6 @@ export default function TLSLineMappingPage() {
 
   return (
     <AppLayout>
-      <Breadcrumb items={[{ label: 'Configuration' }, { label: 'TLS & Line Mapping', active: true }]} />
       <PageHeader title="TLS & Line Mapping" description="Trace every mapping. TLS ID Device to Line Operation — tracking line visibility." />
 
       <Toolbar
