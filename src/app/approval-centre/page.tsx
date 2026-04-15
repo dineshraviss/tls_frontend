@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { AlertTriangle, QrCode, WifiOff, UserPlus } from 'lucide-react'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 
@@ -41,7 +40,6 @@ export default function ApprovalCentrePage() {
 
   return (
     <AppLayout>
-      <Breadcrumb items={[{ label: 'Order Master' }, { label: 'Approval Centre', active: true }]} />
       <PageHeader title="Approval Centre" description="Review and approve or reject pending requests from all modules." />
 
       {/* Stats */}

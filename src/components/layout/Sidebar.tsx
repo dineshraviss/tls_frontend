@@ -3,30 +3,31 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
-import { ChevronDown, ChevronRight, LayoutDashboard, X, Grid3X3 } from 'lucide-react'
+import { ChevronDown, ChevronRight, LayoutDashboard, X, Database } from 'lucide-react'
 
 const navSections = [
   {
     key: 'MASTERS',
     title: 'MASTERS',
-    icon: Grid3X3,
+    icon: Database,
     defaultOpen: true,
     items: [
-      { label: 'Company Master',    route: '/masters/company-master' },
-      { label: 'Branch Master',     route: '/masters/branch-master' },
-      { label: 'Zone Master',       route: '/masters/zone-master' },
-      { label: 'Line Master',       route: '/masters/line-master' },
-      { label: 'Role Master',       route: '/masters/role-master' },
-      { label: 'Department Master', route: '/masters/department-master' },
-      { label: 'Employee Master',   route: '/masters/employee-master' },
-      { label: 'Shift Master',      route: '/masters/shift-master' },
+      { label: 'Company',    route: '/masters/company-master' },
+      { label: 'Branch',     route: '/masters/branch-master' },
+      { label: 'Zone',       route: '/masters/zone-master' },
+      { label: 'Line',       route: '/masters/line-master' },
+      { label: 'Work Station', route: '/masters/workstation-master' },
+      { label: 'Role',       route: '/masters/role-master' },
+      { label: 'Department', route: '/masters/department-master' },
+      { label: 'Employee',   route: '/masters/employee-master' },
+      { label: 'Shift',      route: '/masters/shift-master' },
       { label: 'Shift Modify',      route: '/masters/shift-modify' },
-      { label: 'Work List Master',  route: '/masters/work-list-master' },
+      { label: 'Work List',  route: '/masters/work-list-master' },
       { label: 'Machine Hub',       route: '/masters/machine-hub' },
-      { label: 'Operation Master',  route: '/masters/operation-master' },
-      { label: 'Order Master',      route: '/masters/order-master' },
-      { label: 'Style Master',      route: '/masters/style-master' },
-      { label: 'Defect Master',     route: '/masters/defect-master' },
+      { label: 'Operation',  route: '/masters/operation-master' },
+      { label: 'Order',      route: '/masters/order-master' },
+      { label: 'Style',      route: '/masters/style-master' },
+      { label: 'Defect',     route: '/masters/defect-master' },
     ],
   },
   {
@@ -160,9 +161,9 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                       <button
                         key={item.label}
                         onClick={() => handleNav(item.route)}
-                        className={`w-full py-2 pr-4 pl-[52px] bg-transparent border-none cursor-pointer
+                        className={`w-full py-2 pr-4 pl-[52px] border-none cursor-pointer
                           flex items-center gap-2.5 text-left font-inherit transition-colors
-                          ${active ? '' : 'hover:bg-black/[0.03] dark:hover:bg-white/5'}`}
+                          ${active ? 'bg-accent/10' : 'bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/5'}`}
                       >
                         <span className={`text-sm2 leading-none ${active ? 'text-accent' : 'text-t-lighter'}`}>&#8226;</span>
                         <span className={`text-sm ${active ? 'text-accent font-medium' : 'text-t-secondary font-normal'}`}>

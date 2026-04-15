@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
+import IconButton from '@/components/ui/IconButton'
 import { Pencil, Trash2, Eye } from 'lucide-react'
 import { apiCall } from '@/services/apiClient'
 import { PER_PAGE } from '@/lib/constants'
 import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 import Toast, { type ToastData } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import DataTable from '@/components/ui/DataTable'
 import Toolbar from '@/components/ui/Toolbar'
@@ -248,6 +248,7 @@ export default function CompanyMasterPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [perPage, setPerPage] = useState(PER_PAGE)
   const [deleting, setDeleting] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
@@ -280,7 +281,7 @@ export default function CompanyMasterPage() {
           totalPages?: number
           pagination?: { total: number; total_pages: number }
         }
-      }>('/company/companyList', { method: 'GET', encrypt: false, payload: { page: String(page), per_page: String(PER_PAGE), search, company_name: '' } })
+      }>('/company/companyList', { method: 'GET', encrypt: false, payload: { page: String(page), per_page: String(perPage), search, company_id: '', status: 'all' } })
 
       const data = res.data
       const rows: Company[] = data?.companies ?? []
@@ -293,7 +294,7 @@ export default function CompanyMasterPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, page])
+  }, [search, page, perPage])
 
   useEffect(() => {
     fetchCompanies()
@@ -370,30 +371,9 @@ export default function CompanyMasterPage() {
       header: '',
       render: (row: Company) => (
         <div className="flex gap-1.5 items-center">
-          <button
-            onClick={() => handleView((row as unknown as { id: number }).id)}
-            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter
-              hover:text-accent transition-colors flex"
-            title="View"
-          >
-            <Eye size={13} />
-          </button>
-          <button
-            onClick={() => { setEditCompany(row); setShowModal(true) }}
-            className="bg-transparent border-none cursor-pointer p-1 text-t-lighter
-              hover:text-accent transition-colors flex"
-            title="Edit"
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={() => setDeleteTarget(row)}
-            className="bg-transparent border-none cursor-pointer p-1 text-danger-light
-              hover:text-danger transition-colors flex"
-            title="Delete"
-          >
-            <Trash2 size={13} />
-          </button>
+          <IconButton variant="accent" onClick={() => handleView((row as unknown as { id: number }).id)} title="View"><Eye size={13} /></IconButton>
+          <IconButton variant="accent" onClick={() => { setEditCompany(row); setShowModal(true) }} title="Edit"><Pencil size={13} /></IconButton>
+          <IconButton variant="danger" onClick={() => setDeleteTarget(row)} title="Delete"><Trash2 size={13} /></IconButton>
         </div>
       ),
     },
@@ -440,7 +420,6 @@ export default function CompanyMasterPage() {
         />
       )}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Company Master', active: true }]} />
       <PageHeader title="Company Master" description="Manage company profiles, locations, types and slot configurations." />
 
       <Toolbar
@@ -460,6 +439,7 @@ export default function CompanyMasterPage() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={setPage}
+        onPerPageChange={setPerPage}
         countLabel="company"
       />
     </AppLayout>

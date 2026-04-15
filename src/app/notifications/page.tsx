@@ -2,7 +2,6 @@
 
 import AppLayout from '@/components/layout/AppLayout'
 import { ShoppingBag, AlertTriangle, QrCode, WifiOff, UserPlus, CheckCircle } from 'lucide-react'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -31,7 +30,6 @@ const notifications: Notification[] = [
 export default function NotificationsPage() {
   return (
     <AppLayout>
-      <Breadcrumb items={[{ label: 'Order Master' }, { label: 'Notifications', active: true }]} />
 
       <PageHeader title="Notifications">
         <Button variant="link" size="sm">Mark all as read &#10003;</Button>

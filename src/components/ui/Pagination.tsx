@@ -8,11 +8,14 @@ interface PaginationProps {
   totalCount: number
   perPage: number
   onPageChange: (page: number) => void
+  onPerPageChange?: (perPage: number) => void
   countLabel?: string
 }
 
+const PER_PAGE_OPTIONS = [10, 20, 30, 50, 100]
+
 export default function Pagination({
-  page, totalPages, totalCount, perPage, onPageChange, countLabel = 'record',
+  page, totalPages, totalCount, perPage, onPageChange, onPerPageChange, countLabel = 'record',
 }: PaginationProps) {
   if (totalCount === 0) return null
 
@@ -28,16 +31,11 @@ export default function Pagination({
       for (let i = 1; i <= totalPages; i++) pages.push(i)
     } else {
       pages.push(1)
-
       if (page > 3) pages.push('...')
-
       const start = Math.max(2, page - 1)
       const end = Math.min(totalPages - 1, page + 1)
-
       for (let i = start; i <= end; i++) pages.push(i)
-
       if (page < totalPages - 2) pages.push('...')
-
       pages.push(totalPages)
     }
 
@@ -47,13 +45,30 @@ export default function Pagination({
   const pageNumbers = getPageNumbers()
 
   return (
-    <div className="px-4 py-3 border-t border-table-line flex items-center justify-between flex-wrap gap-2">
-      {/* Count info */}
-      <span className="text-xs text-t-lighter">
-        Showing {from}-{to} of {totalCount} {countLabel}{totalCount !== 1 ? 's' : ''}
-      </span>
+    <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-t border-table-line flex flex-col sm:flex-row items-center justify-between gap-2">
+      {/* Left: Count + Per Page */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-2xs sm:text-xs text-t-lighter">
+          Showing {from}-{to} of {totalCount} {countLabel}{totalCount !== 1 ? 's' : ''}
+        </span>
+        {onPerPageChange && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs text-t-lighter">Per page:</span>
+            <select
+              value={perPage}
+              onChange={e => { onPerPageChange(Number(e.target.value)); onPageChange(1) }}
+              suppressHydrationWarning
+              className="h-7 px-1.5 text-2xs text-t-body bg-card border border-header-line rounded-input outline-none cursor-pointer"
+            >
+              {PER_PAGE_OPTIONS.map(n => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
-      {/* Page controls */}
+      {/* Right: Page controls */}
       {totalPages >= 1 && (
         <div className="flex items-center gap-1">
           {/* First */}

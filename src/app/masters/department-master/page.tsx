@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
+import IconButton from '@/components/ui/IconButton'
 import { Pencil, Trash2, Eye } from 'lucide-react'
 import { apiCall } from '@/services/apiClient'
 import { PER_PAGE } from '@/lib/constants'
 import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 import Toast, { type ToastData } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import DataTable from '@/components/ui/DataTable'
 import Toolbar from '@/components/ui/Toolbar'
@@ -160,6 +160,7 @@ export default function DepartmentMasterPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [perPage, setPerPage] = useState(PER_PAGE)
   const [deleting, setDeleting] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
@@ -186,7 +187,7 @@ export default function DepartmentMasterPage() {
         }
       }>('/department/list', {
         method: 'GET', encrypt: false,
-        payload: { page: String(page), per_page: String(PER_PAGE), search, name: '', dept_code: '', branch_id: '' },
+        payload: { page: String(page), per_page: String(perPage), search, name: '', dept_code: '', branch_id: '' },
       })
       const data = res.data
       setDepartments(data?.departments ?? [])
@@ -197,7 +198,7 @@ export default function DepartmentMasterPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, page])
+  }, [search, page, perPage])
 
   useEffect(() => { fetchDepartments() }, [fetchDepartments])
 
@@ -268,9 +269,9 @@ export default function DepartmentMasterPage() {
       header: '',
       render: (row: Department) => (
         <div className="flex gap-1.5 items-center">
-          <button onClick={() => handleView(row.uuid)} className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-accent transition-colors flex" title="View"><Eye size={13} /></button>
-          <button onClick={() => { setEditDept(row); setShowModal(true) }} className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-accent transition-colors flex" title="Edit"><Pencil size={13} /></button>
-          <button onClick={() => setDeleteTarget(row)} className="bg-transparent border-none cursor-pointer p-1 text-danger-light hover:text-danger transition-colors flex" title="Delete"><Trash2 size={13} /></button>
+          <IconButton variant="accent" onClick={() => handleView(row.uuid)} title="View"><Eye size={13} /></IconButton>
+          <IconButton variant="accent" onClick={() => { setEditDept(row); setShowModal(true) }} title="Edit"><Pencil size={13} /></IconButton>
+          <IconButton variant="danger" onClick={() => setDeleteTarget(row)} title="Delete"><Trash2 size={13} /></IconButton>
         </div>
       ),
     },
@@ -316,7 +317,6 @@ export default function DepartmentMasterPage() {
         />
       )}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Department Master', active: true }]} />
       <PageHeader title="Department Master" description="Manage departments and their branch assignments." />
 
       <Toolbar
@@ -336,6 +336,7 @@ export default function DepartmentMasterPage() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={setPage}
+        onPerPageChange={setPerPage}
         countLabel="department"
       />
     </AppLayout>

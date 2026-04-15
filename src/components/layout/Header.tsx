@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Sun, Moon, Lock, Settings, Bell, ChevronDown, Menu, LogOut } from 'lucide-react'
 import { clearAuthCookies, getAuthUser } from '@/lib/cookies'
 import { useTheme } from '@/hooks/useTheme'
@@ -11,10 +11,54 @@ interface HeaderProps {
   onMenuToggle: () => void
 }
 
+const ROUTE_LABELS: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/masters/company-master': 'Company',
+  '/masters/branch-master': 'Branch',
+  '/masters/zone-master': 'Zone',
+  '/masters/line-master': 'Line',
+  '/masters/workstation-master': 'Work Station',
+  '/masters/role-master': 'Role',
+  '/masters/department-master': 'Department',
+  '/masters/employee-master': 'Employee',
+  '/masters/shift-master': 'Shift Master',
+  '/masters/shift-modify': 'Shift Modify',
+  '/masters/work-list-master': 'Work List',
+  '/masters/machine-hub': 'Machine Hub',
+  '/masters/operation-master': 'Operation',
+  '/masters/order-master': 'Order',
+  '/masters/style-master': 'Style',
+  '/masters/defect-master': 'Defect',
+  '/configuration/tls-id-registration': 'TLS ID Registration',
+  '/configuration/tls-line-mapping': 'TLS & Line Mapping',
+  '/notifications': 'Notifications',
+  '/approval-centre': 'Approval Centre',
+}
+
+function getBreadcrumbs(pathname: string) {
+  const label = ROUTE_LABELS[pathname]
+  if (!label) return [{ text: 'Dashboard', active: true }]
+
+  if (pathname.startsWith('/masters/')) {
+    return [
+      { text: 'Master', active: false },
+      { text: label, active: true },
+    ]
+  }
+  if (pathname.startsWith('/configuration/')) {
+    return [
+      { text: 'Configuration', active: false },
+      { text: label, active: true },
+    ]
+  }
+  return [{ text: label, active: true }]
+}
+
 export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
 
   const [mounted, setMounted] = useState(false)
   const [now, setNow] = useState(() => new Date())
@@ -68,11 +112,15 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
             <Menu size={20} />
           </button>
         )}
-        <div>
-          <h1 className={`m-0 font-bold text-t-primary leading-tight ${isMobile ? 'text-sm' : 'text-md'}`}>
-            Operations Dashboard
-          </h1>
-          {!isMobile && <p className="m-0 text-xs2 text-t-lighter">Line Real-time monitoring</p>}
+        <div className="flex items-center gap-1.5">
+          {getBreadcrumbs(pathname).map((crumb, i) => (
+            <span key={i} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-xs text-t-lighter">&rsaquo;</span>}
+              <span className={`${isMobile ? 'text-sm' : 'text-md'} ${crumb.active ? 'font-bold text-t-primary' : 'font-normal text-t-lighter'}`}>
+                {crumb.text}
+              </span>
+            </span>
+          ))}
         </div>
       </div>
 

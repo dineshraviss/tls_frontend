@@ -45,7 +45,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
           ))}
         </select>
         {showError && (
-          <span className="text-xs2 text-red-500 mt-0.5">{error}</span>
+          <span className="text-xs text-red-500 mt-0.5">{error}</span>
         )}
       </div>
     )

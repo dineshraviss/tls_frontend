@@ -8,7 +8,6 @@ import { PER_PAGE } from '@/lib/constants'
 import { validateField, validateAll, hasErrors, type ValidationRules } from '@/lib/validation'
 import Toast, { type ToastData } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import PageHeader from '@/components/ui/PageHeader'
 import AdvancedTable, { type AdvancedColumn, type ActionItem } from '@/components/ui/AdvancedTable'
 import Toolbar from '@/components/ui/Toolbar'
@@ -170,7 +169,7 @@ function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
       }
     >
       <form id="shift-form" onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-0">
           {/* ── Left Column ── */}
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-2.5">
@@ -198,7 +197,7 @@ function ShiftModal({ shift, branches, allZones, onClose, onSaved }: {
           </div>
 
           {/* ── Right Column ── */}
-          <div className="flex flex-col gap-3 border-l border-header-line pl-6">
+          <div className="flex flex-col gap-3 md:border-l md:border-header-line md:pl-6 pt-3 md:pt-0">
             {sectionTitle('Lunch break')}
             <div className="grid grid-cols-2 gap-2.5">
               <FormInput label="Lunch start" type="time" value={form.lunch_start} onChange={e => set('lunch_start', e.target.value)} />
@@ -233,6 +232,7 @@ export default function ShiftMasterPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [perPage, setPerPage] = useState(PER_PAGE)
   const [deleting, setDeleting] = useState(false)
 
   const [activeTab, setActiveTab] = useState<'Shift(s)' | 'Calendar'>('Shift(s)')
@@ -256,7 +256,7 @@ export default function ShiftMasterPage() {
     try {
       const res = await apiCall<{ data?: { shifts?: Shift[]; pagination?: { total: number; total_pages: number } } }>('/shift/list', {
         method: 'GET', encrypt: false,
-        payload: { page: String(page), per_page: String(PER_PAGE), search, branch_id: '' },
+        payload: { page: String(page), per_page: String(perPage), search, branch_id: '' },
       })
       const data = res.data
       setShifts(data?.shifts ?? [])
@@ -264,7 +264,7 @@ export default function ShiftMasterPage() {
       setTotalPages(data?.pagination?.total_pages ?? 1)
     } catch { setShifts([]) }
     finally { setLoading(false) }
-  }, [search, page])
+  }, [search, page, perPage])
 
   useEffect(() => { fetchShifts() }, [fetchShifts])
 
@@ -401,7 +401,6 @@ export default function ShiftMasterPage() {
         />
       )}
 
-      <Breadcrumb items={[{ label: 'Master' }, { label: 'Shift Master', active: true }]} />
       <PageHeader title="Shift Master" description="Define factory shifts with working hours and break times." />
 
       {/* Tabs */}
@@ -441,6 +440,7 @@ export default function ShiftMasterPage() {
           totalPages={totalPages}
           totalCount={totalCount}
           onPageChange={setPage}
+        onPerPageChange={setPerPage}
           countLabel="shift"
         />
       ) : (
