@@ -20,6 +20,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/masters/workstation-master': 'Work Station',
   '/masters/role-master': 'Role',
   '/masters/department-master': 'Department',
+  '/masters/designation-master': 'Designation',
   '/masters/employee-master': 'Employee',
   '/masters/shift-master': 'Shift Master',
   '/masters/shift-modify': 'Shift Modify',

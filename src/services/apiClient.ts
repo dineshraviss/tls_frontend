@@ -1,5 +1,19 @@
 import { getAuthToken } from '@/lib/cookies'
 
+export async function apiUpload<T = Record<string, unknown>>(
+  endpoint: string,
+  formData: FormData
+): Promise<T> {
+  const token = getAuthToken()
+  formData.set('_endpoint', endpoint)
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: formData,
+  })
+  return res.json() as Promise<T>
+}
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   payload?: Record<string, unknown>

@@ -28,6 +28,7 @@ interface Branch {
   branch_name: string
   branch_code: string
   address: string
+  status: number
   company?: { id: number; company_name: string; company_code: string }
 }
 
@@ -266,6 +267,11 @@ export default function BranchMasterPage() {
           {row.address}
         </span>
       ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row: Branch) => <Badge variant={row.status === 1 ? 'success' : 'default'}>{row.status === 1 ? 'Active' : 'Inactive'}</Badge>,
     },
     {
       key: 'actions',
