@@ -329,6 +329,11 @@ export default function ZoneMasterPage() {
       ),
     },
     {
+      key: 'status',
+      header: 'Status',
+      render: (row: Zone) => <Badge variant={row.status === 1 ? 'success' : 'default'}>{row.status === 1 ? 'Active' : 'Inactive'}</Badge>,
+    },
+    {
       key: 'actions',
       header: '',
       render: (row: Zone) => (

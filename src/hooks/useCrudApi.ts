@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { apiCall } from '@/services/apiClient'
 import { PER_PAGE } from '@/lib/constants'
 
@@ -47,13 +47,16 @@ export function useCrudApi<T>({ basePath, listKey, idField = 'uuid', listParams 
   const [totalCount, setTotalCount] = useState(0)
   const [search, setSearch] = useState('')
 
+  const listParamsRef = useRef(listParams)
+  listParamsRef.current = listParams
+
   const fetchList = useCallback(async () => {
     setLoading(true)
     try {
       const res = await apiCall<ListResponse<T>>(`${basePath}/list`, {
         method: 'GET',
         encrypt: false,
-        payload: { page: String(page), per_page: String(perPage), search, status: 'all', ...listParams },
+        payload: { page: String(page), per_page: String(perPage), search, status: 'all', ...listParamsRef.current },
       })
       const nested = res.data
       const rows = (nested?.[listKey] as T[] | undefined) ?? []
@@ -66,7 +69,7 @@ export function useCrudApi<T>({ basePath, listKey, idField = 'uuid', listParams 
     } finally {
       setLoading(false)
     }
-  }, [basePath, listKey, page, perPage, search, listParams])
+  }, [basePath, listKey, page, perPage, search])
 
   const create = async (payload: Record<string, unknown>): Promise<MutationResponse> => {
     return apiCall<MutationResponse>(`${basePath}/create`, { payload })

@@ -28,6 +28,7 @@ interface Company {
   location: { lat: number; lng: number }
   company_type: string
   max_slot: number
+  status: number
 }
 
 interface FormData {
@@ -365,6 +366,11 @@ export default function CompanyMasterPage() {
           {row.location?.lat}, {row.location?.lng}
         </span>
       ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row: Company) => <Badge variant={row.status === 1 ? 'success' : 'default'}>{row.status === 1 ? 'Active' : 'Inactive'}</Badge>,
     },
     {
       key: 'actions',

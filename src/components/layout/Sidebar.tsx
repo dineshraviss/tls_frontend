@@ -19,6 +19,7 @@ const navSections = [
       { label: 'Work Station', route: '/masters/workstation-master' },
       { label: 'Role',       route: '/masters/role-master' },
       { label: 'Department', route: '/masters/department-master' },
+      { label: 'Designation', route: '/masters/designation-master' },
       { label: 'Employee',   route: '/masters/employee-master' },
       { label: 'Shift',      route: '/masters/shift-master' },
       { label: 'Shift Modify',      route: '/masters/shift-modify' },
