@@ -331,8 +331,8 @@ function DefectViewPanel({ defect, loading, onClose, onAddCap }: {
         {/* Meta chips */}
         {!loading && defect && (
           <div className="flex items-center gap-3 px-6 pb-4 shrink-0">
-            {defect.category && <span className="text-sm text-t-body">{String(defect.category)}</span>}
-            {department?.name && <span className="text-sm text-t-body">{String(department.name)}</span>}
+            {!!defect.category && <span className="text-sm text-t-body">{String(defect.category)}</span>}
+            {!!department?.name && <span className="text-sm text-t-body">{String(department.name)}</span>}
             {severityBadge(String(defect.severity ?? ''))}
           </div>
         )}
