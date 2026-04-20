@@ -315,10 +315,10 @@ function DefectViewPanel({ defect, loading, onClose, onAddCap }: {
             ) : (
               <>
                 <h2 className="text-base font-bold text-t-primary leading-snug">
-                  {defect.code as string} | {defect.defect_name as string}
+                  {String(defect.code ?? '')} | {String(defect.defect_name ?? '')}
                 </h2>
                 {defect.description && (
-                  <p className="text-xs text-t-lighter mt-1.5 leading-relaxed">{defect.description as string}</p>
+                  <p className="text-xs text-t-lighter mt-1.5 leading-relaxed">{String(defect.description)}</p>
                 )}
               </>
             )}
@@ -331,9 +331,9 @@ function DefectViewPanel({ defect, loading, onClose, onAddCap }: {
         {/* Meta chips */}
         {!loading && defect && (
           <div className="flex items-center gap-3 px-6 pb-4 shrink-0">
-            {defect.category && <span className="text-sm text-t-body">{defect.category as string}</span>}
-            {department?.name && <span className="text-sm text-t-body">{department.name as string}</span>}
-            {severityBadge(defect.severity as string)}
+            {defect.category && <span className="text-sm text-t-body">{String(defect.category)}</span>}
+            {department?.name && <span className="text-sm text-t-body">{String(department.name)}</span>}
+            {severityBadge(String(defect.severity ?? ''))}
           </div>
         )}
 
