@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 import Modal from '@/components/ui/Modal'
 import FormInput from '@/components/ui/FormInput'
 import FormSelect from '@/components/ui/FormSelect'
@@ -11,23 +12,27 @@ import Badge from '@/components/ui/Badge'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import Toast from '@/components/ui/Toast'
 import PageHeader from '@/components/ui/PageHeader'
-import { Search, Plus, Pencil, Trash2, QrCode, ArrowRight, Download, Upload, MoreVertical } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, QrCode, ArrowRight, Download, Upload, MoreVertical, X } from 'lucide-react'
 import { apiCall, apiUpload } from '@/services/apiClient'
 import { useDropdownData } from '@/hooks/useDropdownData'
 import type { ToastData } from '@/components/ui/Toast'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-interface MachineType {
+interface MachineTypeItem {
   id: number
   uuid: string
   type_name: string
   needle?: string
   name?: string
   notes?: string | null
-  status: number
-  is_active: number
-  machines_count?: number
-  specs_count?: number
+  machine_count: string | number
+}
+
+interface MachineTypeGroup {
+  variant: string
+  variant_count: number
+  total_machine_count: number
+  data: MachineTypeItem[]
 }
 
 interface MachineSpec {
@@ -48,8 +53,10 @@ interface MachineSpec {
   is_active: number
   branch?: { id: number; branch_name: string; address?: string } | null
   conditionInfo?: { id: number; type: string; value: string } | null
-  stockType?: { id: number; type_name: string; needle: string; name: string }
+  stockType?: { id: number; type_name: string; needle: string | null; name: string | null }
   file?: string | null
+  createdByUser?: { id: number; name: string; emp_code: string | null }
+  updatedByUser?: { id: number; name: string; emp_code: string | null } | null
 }
 
 const CONDITION_OPTIONS = [
@@ -62,7 +69,7 @@ const conditionLabel = (val: string) => CONDITION_OPTIONS.find(o => o.value === 
 
 // ── Add / Edit Machine Type Modal ─────────────────────────────────────────────
 function MachineTypeModal({ editType, onClose, onSaved, onError }: {
-  editType?: MachineType | null
+  editType?: MachineTypeItem | null
   onClose: () => void
   onSaved: (msg: string) => void
   onError: (msg: string) => void
@@ -224,7 +231,6 @@ function SpecModal({ spec, machineTypeId, onClose, onSaved, onError }: {
           <FormInput label="QR Code" value={form.qr_code} onChange={e => set('qr_code', e.target.value)} placeholder="e.g. 56" />
         </div>
 
-        {/* File upload */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-t-body">Attachment (PDF / Image)</label>
           <div
@@ -242,9 +248,168 @@ function SpecModal({ spec, machineTypeId, onClose, onSaved, onError }: {
   )
 }
 
+// ── Specification View Modal ───────────────────────────────────────────────────
+function SpecViewModal({ uuid, onClose, onEdit, onDelete }: {
+  uuid: string
+  onClose: () => void
+  onEdit: (spec: MachineSpec) => void
+  onDelete: (spec: MachineSpec) => void
+}) {
+  const [spec, setSpec] = useState<MachineSpec | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    apiCall<{ success?: boolean; data?: MachineSpec }>(
+      '/specification/show',
+      { method: 'GET', encrypt: false, payload: { uuid } }
+    ).then(res => setSpec(res.data ?? null))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [uuid])
+
+  const fmt = (d: string | null | undefined) => d ? d.slice(0, 10) : '—'
+
+  const warrantyExpiry = (() => {
+    if (!spec?.purchase_date || !spec.warranty) return '—'
+    const d = new Date(spec.purchase_date)
+    d.setFullYear(d.getFullYear() + spec.warranty)
+    return d.toISOString().slice(0, 10)
+  })()
+
+  const detailRows = spec ? [
+    { label: 'Machine ID', value: spec.machine_no },
+    { label: 'Machine Type', value: spec.stockType?.type_name ?? '—' },
+    { label: 'Brand', value: spec.brand || '—' },
+    { label: 'Model', value: spec.model_no || '—' },
+    { label: 'Serial No', value: spec.serial_no || '—' },
+    { label: 'Branch', value: spec.branch?.branch_name ?? '—' },
+    { label: 'Condition', value: spec.conditionInfo?.value ?? conditionLabel(String(spec.condition)) },
+    { label: 'QR Code', value: spec.qr_code ?? '—' },
+    { label: 'Status', value: spec.is_active === 1 ? 'Active' : 'Inactive' },
+    { label: 'Purchase Date', value: fmt(spec.purchase_date) },
+    { label: 'Warranty Period', value: spec.warranty ? `${spec.warranty} Yrs` : '—' },
+    { label: 'Warranty Expiry', value: warrantyExpiry },
+  ] : []
+
+  return (
+    <div className="fixed inset-0 z-[9997] flex justify-end">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative z-[1] bg-modal w-full max-w-[680px] h-full flex flex-col shadow-2xl overflow-hidden">
+
+        {/* Title bar */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-table-line shrink-0">
+          <h2 className="text-base font-bold text-t-primary">
+            Machine Specification{spec ? ` - ${spec.machine_no}` : ''}
+          </h2>
+          <IconButton variant="default" onClick={onClose}>
+            <X size={16} />
+          </IconButton>
+        </div>
+
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center text-t-lighter text-sm">Loading...</div>
+        ) : !spec ? (
+          <div className="flex-1 flex items-center justify-center text-t-lighter text-sm">Failed to load</div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+
+            {/* Sub-header: machine badge + type + status + edit/delete */}
+            <div className="px-6 py-4 flex items-start justify-between gap-4 border-b border-table-line">
+              <div className="flex items-start gap-4 min-w-0">
+                <span className="shrink-0 text-xs font-bold text-t-secondary bg-table-head border border-table-line px-3 py-2 rounded-lg mt-0.5">
+                  {spec.machine_no}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-t-primary">{spec.stockType?.type_name ?? '—'}</span>
+                    <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                      {spec.is_active === 1 ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <p className="m-0 text-xs text-t-lighter mt-1">
+                    {[spec.brand, spec.model_no, spec.branch?.branch_name, spec.serial_no ? `Serial: ${spec.serial_no}` : null].filter(Boolean).join(' | ')}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={() => { onEdit(spec); onClose() }}><Pencil size={12} /> Edit</Button>
+                <Button variant="danger" size="sm" onClick={() => { onDelete(spec); onClose() }}><Trash2 size={12} /> Delete</Button>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-6">
+
+              {/* Service date cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5 px-5 py-4 rounded-xl border border-table-line bg-card-alt">
+                  <p className="m-0 text-xs text-t-lighter">Last Service</p>
+                  <p className="m-0 text-lg font-semibold text-t-primary">{fmt(spec.last_oil_change)}</p>
+                </div>
+                <div className="flex flex-col gap-1.5 px-5 py-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/40">
+                  <p className="m-0 text-xs text-amber-500 dark:text-amber-400">Next Service</p>
+                  <p className="m-0 text-lg font-semibold text-amber-700 dark:text-amber-300">{fmt(spec.next_maintenance)}</p>
+                </div>
+              </div>
+
+              {/* Detail grid — 4 cols × 3 rows */}
+              <div className="rounded-lg border border-table-line overflow-hidden">
+                {[
+                  [
+                    { label: 'Machine ID', value: spec.machine_no },
+                    { label: 'Machine Type', value: spec.stockType?.type_name ?? '—' },
+                    { label: 'Brand', value: spec.brand || '—' },
+                    { label: 'Model', value: spec.model_no || '—' },
+                  ],
+                  [
+                    { label: 'Serial No', value: spec.serial_no || '—' },
+                    { label: 'Branch', value: spec.branch?.branch_name ?? '—' },
+                    { label: 'Condition', value: spec.conditionInfo?.value ?? conditionLabel(String(spec.condition)) },
+                    { label: 'QR Code', value: spec.qr_code ?? '—' },
+                  ],
+                  [
+                    { label: 'Status', value: spec.is_active === 1 ? 'Active' : 'Inactive' },
+                    { label: 'Purchase Date', value: fmt(spec.purchase_date) },
+                    { label: 'Warranty Period', value: spec.warranty ? `${spec.warranty} Yrs` : '—' },
+                    { label: 'Warranty Expiry', value: warrantyExpiry },
+                  ],
+                ].map((row, ri) => (
+                  <div key={ri} className={`grid grid-cols-4 ${ri < 2 ? 'border-b border-table-line' : ''} ${ri % 2 === 1 ? 'bg-card-alt' : ''}`}>
+                    {row.map((cell, ci) => (
+                      <div key={cell.label} className={`px-4 py-3.5 flex flex-col gap-1 ${ci < 3 ? 'border-r border-table-line' : ''}`}>
+                        <p className="m-0 text-xs text-t-lighter">{cell.label}</p>
+                        <p className="m-0 text-sm font-semibold text-t-primary">{cell.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Notes */}
+              <div>
+                <p className="m-0 text-sm font-semibold text-t-body mb-2">Notes</p>
+                <p className="m-0 text-sm text-t-lighter">—</p>
+              </div>
+
+              {/* Image */}
+              {spec.file && (
+                <div>
+                  <p className="m-0 text-sm font-semibold text-t-body mb-2">Image</p>
+                  <img src={spec.file} alt="Machine" className="max-w-xs rounded-lg border border-table-line" />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function MachineHubPage() {
-  const [types, setTypes] = useState<MachineType[]>([])
+  const [groups, setGroups] = useState<MachineTypeGroup[]>([])
   const [typesLoading, setTypesLoading] = useState(true)
   const [searchType, setSearchType] = useState('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -254,38 +419,44 @@ export default function MachineHubPage() {
   const [specsLoading, setSpecsLoading] = useState(false)
 
   const [showAddType, setShowAddType] = useState(false)
-  const [editTypeItem, setEditTypeItem] = useState<MachineType | null>(null)
+  const [editTypeItem, setEditTypeItem] = useState<MachineTypeItem | null>(null)
   const [showSpecModal, setShowSpecModal] = useState(false)
   const [editSpec, setEditSpec] = useState<MachineSpec | null>(null)
   const [deleteSpec, setDeleteSpec] = useState<MachineSpec | null>(null)
   const [deletingSpec, setDeletingSpec] = useState(false)
 
-  const [deleteType, setDeleteType] = useState<MachineType | null>(null)
+  const [deleteType, setDeleteType] = useState<MachineTypeItem | null>(null)
   const [deletingType, setDeletingType] = useState(false)
 
   const [toast, setToast] = useState<ToastData | null>(null)
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
+  const [viewSpecUuid, setViewSpecUuid] = useState<string | null>(null)
 
-  // ── Load machine types ──
+  const hasSelectedRef = useRef(false)
+
+  // ── Load grouped machine types ──
   const fetchTypes = useCallback(async () => {
     setTypesLoading(true)
     try {
-      const res = await apiCall<{ success?: boolean | number; message?: string; data?: { stitch_types?: MachineType[] } }>(
-        '/machine/list',
-        { method: 'GET', encrypt: false, payload: { page: '1', per_page: '100', search: searchType, status: 'all', machine_type: '' } }
+      const res = await apiCall<{ success?: boolean | number; message?: string; data?: MachineTypeGroup[] }>(
+        '/machine/machinelist',
+        { method: 'GET', encrypt: false, payload: { search: searchType, status: 'ALL' } }
       )
       if (!res.success) {
         setToast({ message: res.message || 'Failed to load machine types', type: 'error' })
-        setTypes([])
+        setGroups([])
         return
       }
-      const list = res.data?.stitch_types ?? []
-      setTypes(list)
-      if (list.length > 0 && selectedId === null) setSelectedId(list[0].id)
-    } catch { setToast({ message: 'Failed to load machine types', type: 'error' }); setTypes([]) }
+      const list = res.data ?? []
+      setGroups(list)
+      if (!hasSelectedRef.current && list.length > 0) {
+        const first = list[0]?.data?.[0]
+        if (first) { setSelectedId(first.id); hasSelectedRef.current = true }
+      }
+    } catch { setToast({ message: 'Failed to load machine types', type: 'error' }); setGroups([]) }
     finally { setTypesLoading(false) }
-  }, [searchType, selectedId])
+  }, [searchType])
 
   useEffect(() => { fetchTypes() }, [fetchTypes])
 
@@ -294,7 +465,7 @@ export default function MachineHubPage() {
     if (!selectedId) return
     setSpecsLoading(true)
     try {
-      const res = await apiCall<{ success?: boolean | number; message?: string; data?: MachineSpec[] }>(
+      const res = await apiCall<{ success?: boolean | number; message?: string; data?: { count?: number; rows?: MachineSpec[] } | MachineSpec[] }>(
         '/machine/machinespecificationlist',
         { method: 'GET', encrypt: false, payload: { machine_id: String(selectedId) } }
       )
@@ -303,7 +474,10 @@ export default function MachineHubPage() {
         setSpecs([])
         return
       }
-      setSpecs(Array.isArray(res.data) ? res.data : [])
+      const rows = Array.isArray(res.data)
+        ? res.data
+        : (res.data as { rows?: MachineSpec[] })?.rows ?? []
+      setSpecs(rows)
     } catch { setToast({ message: 'Failed to load specifications', type: 'error' }); setSpecs([]) }
     finally { setSpecsLoading(false) }
   }, [selectedId])
@@ -334,6 +508,7 @@ export default function MachineHubPage() {
       setToast({ message: res.message || 'Machine type deleted', type: 'success' })
       setDeleteType(null)
       setSelectedId(null)
+      hasSelectedRef.current = false
       fetchTypes()
     } catch { setToast({ message: 'Failed to delete', type: 'error' }) }
     finally { setDeletingType(false) }
@@ -345,10 +520,7 @@ export default function MachineHubPage() {
     setOpenMenuId(id)
   }
 
-  const selected = types.find(t => t.id === selectedId)
-  const filteredTypes = types.filter(t =>
-    t.type_name?.toLowerCase().includes(searchType.toLowerCase())
-  )
+  const selected = groups.flatMap(g => g.data).find(t => t.id === selectedId) ?? null
 
   return (
     <AppLayout>
@@ -384,6 +556,15 @@ export default function MachineHubPage() {
         />
       )}
 
+      {viewSpecUuid && (
+        <SpecViewModal
+          uuid={viewSpecUuid}
+          onClose={() => setViewSpecUuid(null)}
+          onEdit={s => { setEditSpec(s); setShowSpecModal(true) }}
+          onDelete={s => setDeleteSpec(s)}
+        />
+      )}
+
       {deleteType && (
         <ConfirmDialog
           title="Delete Machine Type"
@@ -397,26 +578,17 @@ export default function MachineHubPage() {
 
       <PageHeader title="Machine Hub" description="Manage machine types and their specifications.">
         <div className="flex gap-2 items-center">
-          <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-input cursor-pointer text-sm2 text-t-body font-inherit hover:bg-table-head">
-            <Download size={13} /> Export
-          </button>
-          <button className="h-8 px-3 flex items-center gap-1.5 bg-card border border-input-line rounded-input cursor-pointer text-sm2 text-t-body font-inherit hover:bg-table-head">
-            <Upload size={13} /> Import
-          </button>
-          <button
-            onClick={() => setShowAddType(true)}
-            className="h-8 px-3.5 flex items-center gap-1.5 bg-accent hover:bg-accent-hover border-none rounded-input cursor-pointer text-sm2 text-white font-semibold font-inherit"
-          >
-            <Plus size={13} /> Add Machine Type
-          </button>
+          <Button variant="outline"><Download size={13} /> Export</Button>
+          <Button variant="outline"><Upload size={13} /> Import</Button>
+          <Button variant="primary" onClick={() => setShowAddType(true)}><Plus size={13} /> Add Machine Type</Button>
         </div>
       </PageHeader>
 
       {/* Body */}
       <div className="flex gap-0 h-[calc(100vh-220px)] min-h-[400px]">
 
-        {/* Left: machine type list */}
-        <div className="w-[220px] shrink-0 bg-card rounded-l-lg border border-header-line flex flex-col overflow-hidden">
+        {/* Left: grouped machine type list */}
+        <div className="w-[270px] shrink-0 bg-card rounded-l-lg border border-header-line flex flex-col overflow-hidden">
           <div className="px-3 py-2.5 border-b border-table-line shrink-0">
             <div className="relative">
               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-t-lighter" />
@@ -428,6 +600,7 @@ export default function MachineHubPage() {
               />
             </div>
           </div>
+
           <div className="flex-1 overflow-y-auto">
             {typesLoading ? (
               <div className="flex flex-col gap-0">
@@ -438,29 +611,41 @@ export default function MachineHubPage() {
                   </div>
                 ))}
               </div>
-            ) : filteredTypes.length === 0 ? (
+            ) : groups.length === 0 ? (
               <p className="text-xs text-t-lighter text-center py-6">No machine types found</p>
             ) : (
-              filteredTypes.map(t => (
-                <div
-                  key={t.id}
-                  onClick={() => { setSelectedId(t.id); setSpecs([]) }}
-                  className={`px-3.5 py-2.5 cursor-pointer border-b border-table-line flex justify-between items-center
-                    ${selectedId === t.id ? 'bg-accent/5' : 'bg-card hover:bg-card-alt'}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className={`m-0 mb-0.5 text-sm truncate ${selectedId === t.id ? 'font-semibold text-accent' : 'font-medium text-t-secondary'}`}>
-                      {t.type_name}
+              groups.map(group => (
+                <div key={group.variant}>
+                  {/* Group header */}
+                  <div className="px-3.5 py-2 border-b border-table-line bg-table-head sticky top-0 z-10 flex items-center justify-between gap-2">
+                    <p className="m-0 text-xs font-bold text-t-secondary">{group.variant}</p>
+                    <p className="m-0 text-xs2 text-t-lighter shrink-0">
+                      {group.variant_count} variants | {group.total_machine_count} machines
                     </p>
-                    {(t.needle || t.name) && (
-                      <p className="m-0 text-xs2 text-t-lighter truncate">
-                        {[t.needle, t.name].filter(Boolean).join(' · ')}
-                      </p>
-                    )}
                   </div>
-                  <Badge variant={t.is_active === 1 ? 'success' : 'default'} className="shrink-0 ml-1 text-xs2">
-                    {t.is_active === 1 ? 'Active' : 'Inactive'}
-                  </Badge>
+                  {/* Individual type items */}
+                  {group.data.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => setSelectedId(t.id)}
+                      className={`pl-5 pr-3.5 py-2.5 cursor-pointer border-b border-table-line flex justify-between items-center border-l-2 transition-colors
+                        ${selectedId === t.id
+                          ? 'bg-accent/5 border-l-accent'
+                          : 'bg-card hover:bg-card-alt border-l-transparent'}`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className={`m-0 text-sm truncate ${selectedId === t.id ? 'font-semibold text-accent' : 'font-medium text-t-secondary'}`}>
+                          {t.type_name}
+                        </p>
+                        {t.name && (
+                          <p className="m-0 text-xs2 text-accent/70 truncate">{t.name}</p>
+                        )}
+                      </div>
+                      <span className="shrink-0 ml-2 min-w-[20px] text-center text-xs2 font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full">
+                        {t.machine_count}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               ))
             )}
@@ -478,33 +663,39 @@ export default function MachineHubPage() {
               {/* Type header */}
               <div className="px-4 py-3.5 border-b border-table-line shrink-0">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
+                  <div className="flex items-start gap-3">
+                    {selected.needle && (
+                      <span className="mt-0.5 text-xs font-bold text-accent bg-accent/10 px-2 py-1 rounded shrink-0">
+                        {selected.name ? selected.name.slice(0, 2).toUpperCase() : ''}-{selected.needle}{/^\d+$/.test(selected.needle) ? 'T' : ''}
+                      </span>
+                    )}
+                    <div>
                       <p className="m-0 text-sm font-bold text-t-primary">{selected.type_name}</p>
-                      {selected.needle && (
-                        <span className="text-2xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">{selected.needle}</span>
-                      )}
-                      <Badge variant={selected.is_active === 1 ? 'success' : 'default'}>
-                        {selected.is_active === 1 ? 'Active' : 'Inactive'}
-                      </Badge>
+                      {selected.notes && <p className="m-0 text-xs text-t-lighter mt-0.5">{selected.notes}</p>}
                     </div>
-                    {selected.notes && <p className="m-0 text-xs text-t-lighter">{selected.notes}</p>}
                   </div>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => setEditTypeItem(selected)}
-                      className="h-[30px] px-3 flex items-center gap-1 bg-card border border-input-line rounded-input cursor-pointer text-xs text-t-body font-inherit hover:bg-table-head"
-                    >
-                      <Pencil size={12} /> Edit
-                    </button>
-                    <button
-                      onClick={() => setDeleteType(selected)}
-                      className="h-[30px] px-3 flex items-center gap-1 bg-card border border-red-300 rounded-input cursor-pointer text-xs text-red-500 font-inherit hover:bg-red-50 dark:hover:bg-red-950/20"
-                    >
-                      <Trash2 size={12} /> Delete
-                    </button>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => setEditTypeItem(selected)}><Pencil size={12} /> Edit</Button>
+                    <Button variant="danger" size="sm" onClick={() => setDeleteType(selected)}><Trash2 size={12} /> Delete</Button>
                   </div>
                 </div>
+              </div>
+
+              {/* Stat cards */}
+              <div className="px-4 py-3 border-b border-table-line shrink-0 grid grid-cols-4 gap-3">
+                {[
+                  { label: 'Machines', value: specsLoading ? null : specs.length },
+                  { label: 'Active', value: specsLoading ? null : specs.filter(s => s.is_active === 1).length },
+                  { label: 'In Maintenance', value: specsLoading ? null : specs.filter(s => s.next_maintenance !== null).length },
+                  { label: 'Operations', value: 0 },
+                ].map(card => (
+                  <div key={card.label} className="flex flex-col gap-1 px-4 py-3 rounded-lg border border-table-line bg-card-alt">
+                    <p className="m-0 text-xs text-t-lighter">{card.label}</p>
+                    <p className="m-0 text-xl font-bold text-t-primary">
+                      {card.value === null ? '--' : card.value}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               {/* Sub-tabs */}
@@ -519,12 +710,9 @@ export default function MachineHubPage() {
                   ))}
                 </div>
                 {subTab === 'Machine Specification' && (
-                  <button
-                    onClick={() => { setEditSpec(null); setShowSpecModal(true) }}
-                    className="h-7 px-3 flex items-center gap-1 bg-accent hover:bg-accent-hover border-none rounded-input cursor-pointer text-xs text-white font-semibold font-inherit"
-                  >
+                  <Button variant="primary" size="sm" onClick={() => { setEditSpec(null); setShowSpecModal(true) }}>
                     <Plus size={12} /> Add New
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -541,7 +729,7 @@ export default function MachineHubPage() {
                     <table className="w-full border-collapse text-sm2">
                       <thead>
                         <tr className="bg-table-head">
-                          {['Machine No', 'Brand', 'Model No', 'Serial No', 'Condition', 'Next Maint.', 'Branch', 'Status', ''].map((h, i) => (
+                          {['M - No.', 'Brand', 'Model No', 'Serial No', 'Condition', 'Next Maint.', 'Branch', 'Status', ''].map((h, i) => (
                             <th key={i} className="px-3.5 py-2.5 text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -563,14 +751,9 @@ export default function MachineHubPage() {
                             </td>
                             <td className="px-3.5 py-2.5">
                               <div className="flex items-center gap-1">
-                                <button className="p-1 text-t-lighter hover:text-t-light" title="QR Code"><QrCode size={13} /></button>
-                                <button className="p-1 text-accent hover:text-accent-hover" title="View"><ArrowRight size={13} /></button>
-                                <button
-                                  onClick={e => openSpecMenu(e, spec.id)}
-                                  className="p-1 text-t-lighter hover:text-t-body"
-                                >
-                                  <MoreVertical size={13} />
-                                </button>
+                                <IconButton variant="default" title="QR Code"><QrCode size={13} /></IconButton>
+                                <IconButton variant="accent" title="View" onClick={() => setViewSpecUuid(spec.uuid)}><ArrowRight size={13} /></IconButton>
+                                <IconButton variant="default" onClick={e => openSpecMenu(e, spec.id)}><MoreVertical size={13} /></IconButton>
                               </div>
                             </td>
                           </tr>
@@ -594,7 +777,7 @@ export default function MachineHubPage() {
         <>
           <div className="fixed inset-0 z-[9990]" onClick={() => setOpenMenuId(null)} />
           <div
-            className="fixed z-[9991] bg-[var(--color-modal-bg)] border border-[var(--color-table-border)] rounded-card shadow-lg py-1 min-w-[130px]"
+            className="fixed z-[9991] bg-modal border border-table-line rounded-card shadow-lg py-1 min-w-[130px]"
             style={{ top: menuPos.top, right: menuPos.right }}
           >
             <button
@@ -603,7 +786,7 @@ export default function MachineHubPage() {
                 if (s) { setEditSpec(s); setShowSpecModal(true) }
                 setOpenMenuId(null)
               }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-t-body hover:bg-[var(--color-table-row-alt-bg)] transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-t-body hover:bg-card-alt transition-colors cursor-pointer"
             >
               <Pencil size={12} /> Edit
             </button>
@@ -613,7 +796,7 @@ export default function MachineHubPage() {
                 if (s) setDeleteSpec(s)
                 setOpenMenuId(null)
               }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
             >
               <Trash2 size={12} /> Delete
             </button>
