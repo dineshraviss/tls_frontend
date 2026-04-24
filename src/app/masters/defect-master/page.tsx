@@ -43,8 +43,8 @@ interface Defect {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function severityBadge(severity: string) {
-  const s = severity?.toLowerCase()
+function severityBadge(severity: unknown) {
+  const s = String(severity ?? '').toLowerCase()
   if (s === 'critical') return <Badge variant="error">Critical</Badge>
   if (s === 'major') return <Badge variant="warning">Major</Badge>
   return <Badge variant="success">Minor</Badge>
@@ -70,18 +70,24 @@ interface DefectForm {
   caps: Cap[]
 }
 
-function DefectModal({ defect, departments, onClose, onSaved }: {
+function DefectModal({ defect, departments, severityOptions, onClose, onSaved }: {
   defect: Defect | null
   departments: { id: number; name: string }[]
+  severityOptions: { id: number; value: string }[]
   onClose: () => void
   onSaved: (msg: string) => void
 }) {
   const isEdit = !!defect
 
+  const matchedSeverity = severityOptions.find(
+    o => String(o.id) === String(defect?.severity ?? '') ||
+         o.value.toLowerCase() === String(defect?.severity ?? '').toLowerCase()
+  )
+
   const [form, setForm] = useState<DefectForm>({
     defect_name: defect?.defect_name ?? '',
     category: defect?.category ?? '',
-    severity: defect?.severity ?? '',
+    severity: matchedSeverity ? String(matchedSeverity.id) : '',
     escalation_flag: (defect?.escalation_flag ?? 0) === 1,
     department_id: defect?.department_id?.toString() ?? '',
     caps: defect?.caps?.length ? defect.caps.map(c => ({ cap_name: c.cap_name, short_name: c.short_name ?? '', notes: c.notes ?? '' })) : [{ cap_name: '', short_name: '', notes: '' }],
@@ -130,7 +136,7 @@ function DefectModal({ defect, departments, onClose, onSaved }: {
         category: form.category,
         severity: form.severity,
         escalation_flag: form.escalation_flag ? 1 : 0,
-        department_id: form.escalation_flag ? form.department_id : '',
+        department_id: !form.escalation_flag ? form.department_id : '',
         caps: form.caps.map(c => ({ cap_name: c.cap_name, short_name: c.short_name, notes: c.notes })),
       }
       let res: { success?: boolean; message?: string }
@@ -182,12 +188,17 @@ function DefectModal({ defect, departments, onClose, onSaved }: {
             touched={touched.category}
             required
           />
-          <FormInput
+          <FormSelect
             label="Severity"
             value={form.severity}
-            onChange={e => setField('severity', e.target.value)}
+            onChange={e => {
+              setField('severity', e.target.value)
+              if (touched.severity)
+                setErrors(er => ({ ...er, severity: e.target.value ? '' : 'Severity is required' }))
+            }}
             onBlur={() => handleBlur('severity')}
-            placeholder="e.g. Minor"
+            options={severityOptions.map(o => ({ value: o.id, label: o.value }))}
+            placeholder="Select severity"
             error={errors.severity}
             touched={touched.severity}
             required
@@ -201,15 +212,15 @@ function DefectModal({ defect, departments, onClose, onSaved }: {
             type="button"
             onClick={() => setField('escalation_flag', !form.escalation_flag)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none
-              ${form.escalation_flag ? 'bg-accent' : 'bg-[var(--color-table-border)]'}`}
+              ${form.escalation_flag ? 'bg-accent' : 'bg-input-line'}`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
               ${form.escalation_flag ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
         </div>
 
-        {/* Department — only when escalation is ON */}
-        {form.escalation_flag && (
+        {/* Department — hidden when escalation is ON */}
+        {!form.escalation_flag && (
           <FormSelect
             label="Department"
             value={form.department_id}
@@ -233,14 +244,14 @@ function DefectModal({ defect, departments, onClose, onSaved }: {
         <div className="flex flex-col gap-3">
           <label className="text-xs font-medium text-t-body">Corrective Action Plan (CAP)</label>
           {form.caps.map((cap, i) => (
-            <div key={i} className="flex flex-col gap-2 p-3 rounded-card border border-[var(--color-table-border)] bg-[var(--color-table-row-alt-bg)] relative">
+            <div key={i} className="flex flex-col gap-2 p-3 rounded-card border border-table-line bg-card-alt relative">
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-xs font-semibold text-accent">CAP-{i + 1}</span>
                 <button
                   type="button"
                   onClick={() => removeCap(i)}
                   disabled={form.caps.length === 1}
-                  className="w-6 h-6 flex items-center justify-center rounded-full border border-[var(--color-table-border)] text-t-lighter hover:text-red-500 hover:border-red-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-t-lighter disabled:hover:border-[var(--color-table-border)]">
+                  className="w-6 h-6 flex items-center justify-center rounded-full border border-table-line text-t-lighter hover:text-red-500 hover:border-red-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-t-lighter disabled:hover:border-table-line">
                   <Minus size={11} />
                 </button>
               </div>
@@ -305,13 +316,13 @@ function DefectViewPanel({ defect, loading, onClose, onAddCap }: {
   return (
     <div className="fixed inset-0 z-[9997] flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-[1] bg-[var(--color-modal-bg)] w-full max-w-[500px] h-full flex flex-col shadow-2xl overflow-hidden">
+      <div className="relative z-[1] bg-modal w-full max-w-[500px] h-full flex flex-col shadow-2xl overflow-hidden">
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-5 pb-4 shrink-0">
           <div className="flex-1 min-w-0">
             {loading || !defect ? (
-              <div className="h-5 w-48 bg-[var(--color-table-border)] rounded animate-pulse" />
+              <div className="h-5 w-48 bg-table-head rounded animate-pulse" />
             ) : (
               <>
                 <h2 className="text-base font-bold text-t-primary leading-snug">
@@ -337,13 +348,13 @@ function DefectViewPanel({ defect, loading, onClose, onAddCap }: {
           </div>
         )}
 
-        <div className="h-px bg-[var(--color-table-border)] mx-6 shrink-0" />
+        <div className="h-px bg-table-line mx-6 shrink-0" />
 
         {/* CAP section */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="flex flex-col gap-2">
-              {[1, 2, 3].map(n => <div key={n} className="h-10 bg-[var(--color-table-border)] rounded animate-pulse" />)}
+              {[1, 2, 3].map(n => <div key={n} className="h-10 bg-table-head rounded animate-pulse" />)}
             </div>
           ) : (
             <>
@@ -360,7 +371,7 @@ function DefectViewPanel({ defect, loading, onClose, onAddCap }: {
               </div>
 
               {addingCap && (
-                <div className="flex flex-col gap-2 mb-4 p-3 rounded-card border border-[var(--color-table-border)] bg-[var(--color-table-row-alt-bg)]">
+                <div className="flex flex-col gap-2 mb-4 p-3 rounded-card border border-table-line bg-card-alt">
                   <FormInput
                     label="CAP Name"
                     value={newCap.cap_name}
@@ -394,7 +405,7 @@ function DefectViewPanel({ defect, loading, onClose, onAddCap }: {
                   <p className="text-xs text-t-lighter py-6 text-center">No corrective action plans added.</p>
                 )}
                 {caps.map((cap, i) => (
-                  <div key={i} className="flex items-center justify-between px-4 py-3 rounded-card border border-[var(--color-table-border)] bg-[var(--color-table-row-bg)]">
+                  <div key={i} className="flex items-center justify-between px-4 py-3 rounded-card border border-table-line bg-card">
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-xs font-bold text-accent shrink-0">CAP-{i + 1}</span>
                       <span className="text-sm text-t-body truncate">{cap.cap_name}</span>
@@ -430,6 +441,14 @@ export default function DefectMasterPage() {
   const [viewLoading, setViewLoading] = useState(false)
 
   const { departments } = useDropdownData({ departments: true })
+  const [severityOptions, setSeverityOptions] = useState<{ id: number; value: string }[]>([])
+
+  useEffect(() => {
+    apiCall<{ data?: { records?: { id: number; value: string }[] } }>(
+      '/dropdown/options-dropdown',
+      { method: 'GET', encrypt: false, payload: { type: 'severity' } }
+    ).then(res => setSeverityOptions(res.data?.records ?? [])).catch(() => {})
+  }, [])
 
   const fetchDefects = useCallback(async () => {
     setLoading(true)
@@ -530,7 +549,7 @@ export default function DefectMasterPage() {
       render: (row: Defect) => (
         <button
           onClick={() => handleView(row.uuid)}
-          className="w-7 h-7 flex items-center justify-center rounded border border-[var(--color-table-border)] text-t-lighter hover:text-accent hover:border-accent transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded border border-table-line text-t-lighter hover:text-accent hover:border-accent transition-colors"
           title="View CAPs"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -544,7 +563,7 @@ export default function DefectMasterPage() {
       render: (row: Defect) => (
         <button
           onClick={e => openMenu(e, row.id)}
-          className="w-7 h-7 flex items-center justify-center rounded text-t-lighter hover:text-t-body hover:bg-[var(--color-table-row-alt-bg)] transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded text-t-lighter hover:text-t-body hover:bg-card-alt transition-colors"
         >
           <MoreVertical size={14} />
         </button>
@@ -560,6 +579,7 @@ export default function DefectMasterPage() {
         <DefectModal
           defect={editDefect}
           departments={departments}
+          severityOptions={severityOptions}
           onClose={() => setShowModal(false)}
           onSaved={msg => { setToast({ message: msg, type: 'success' }); fetchDefects() }}
         />
@@ -615,7 +635,7 @@ export default function DefectMasterPage() {
         <>
           <div className="fixed inset-0 z-[9990]" onClick={() => setOpenMenuId(null)} />
           <div
-            className="fixed z-[9991] bg-[var(--color-modal-bg)] border border-[var(--color-table-border)] rounded-card shadow-lg py-1 min-w-[130px]"
+            className="fixed z-[9991] bg-modal border border-table-line rounded-card shadow-lg py-1 min-w-[130px]"
             style={{ top: menuPos.top, right: menuPos.right }}
           >
             <button
@@ -624,7 +644,7 @@ export default function DefectMasterPage() {
                 if (row) { setEditDefect(row); setShowModal(true) }
                 setOpenMenuId(null)
               }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-t-body hover:bg-[var(--color-table-row-alt-bg)] transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-t-body hover:bg-card-alt transition-colors"
             >
               <Pencil size={12} /> Edit
             </button>
