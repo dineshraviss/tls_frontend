@@ -32,6 +32,14 @@ const navSections = [
     ],
   },
   {
+    key: 'PRODUCTION_PLANNING',
+    title: 'PRODUCTION PLANNING',
+    defaultOpen: false,
+    items: [
+      { label: 'Operation Bulletin (OB)', route: '/production-planning/operation-bulletin' },
+    ],
+  },
+  {
     key: 'CONFIGURATION',
     title: 'CONFIGURATION',
     defaultOpen: false,

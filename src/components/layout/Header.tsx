@@ -30,6 +30,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/masters/order-master': 'Order',
   '/masters/style-master': 'Style',
   '/masters/defect-master': 'Defect',
+  '/production-planning/operation-bulletin': 'Operation Bulletin (OB)',
   '/configuration/tls-id-registration': 'TLS ID Registration',
   '/configuration/tls-line-mapping': 'TLS & Line Mapping',
   '/notifications': 'Notifications',
@@ -40,6 +41,12 @@ function getBreadcrumbs(pathname: string) {
   const label = ROUTE_LABELS[pathname]
   if (!label) return [{ text: 'Dashboard', active: true }]
 
+  if (pathname.startsWith('/production-planning/')) {
+    return [
+      { text: 'Production Planning', active: false },
+      { text: label, active: true },
+    ]
+  }
   if (pathname.startsWith('/masters/')) {
     return [
       { text: 'Master', active: false },
