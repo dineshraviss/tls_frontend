@@ -38,7 +38,8 @@ interface MachineSpec {
   id: number
   uuid: string
   name: string
-  machine_id: string
+  machine_id?: string
+  machine_no?: string
 }
 
 interface DefectOption {
@@ -151,9 +152,9 @@ function MultiSelectDefects({
 }
 
 // ── Add/Edit Modal ─────────────────────────────────────────────────────────────
-type FormField = 'operation_name' | 'code' | 'sam' | 'machine_type_id' | 'machine_id'
-type FormErrors = Partial<Record<FormField, string>>
-type Touched = Partial<Record<FormField, boolean>>
+type FormField = 'operation_name' | 'code' | 'sam' | 'machine_type_id'
+type FormErrors = Partial<Record<FormField | 'machine_id', string>>
+type Touched = Partial<Record<FormField | 'machine_id', boolean>>
 
 const SAM_RE = /^\d{2}:\d{2}$/
 
@@ -165,7 +166,6 @@ const rules: ValidationRules<FormField> = {
     pattern: { value: SAM_RE, message: 'SAM must be in MM:SS format (e.g. 02:30)' },
   },
   machine_type_id: { required: 'Machine type is required' },
-  machine_id: { required: 'Machine is required' },
 }
 
 interface OperationForm {
@@ -249,7 +249,7 @@ function OperationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const allTouched: Touched = { operation_name: true, code: true, sam: true, machine_type_id: true, machine_id: true }
+    const allTouched: Touched = { operation_name: true, code: true, sam: true, machine_type_id: true }
     setTouched(allTouched)
 
     const allErrors = validateAll(
@@ -258,7 +258,6 @@ function OperationModal({
         code: form.code,
         sam: form.sam,
         machine_type_id: form.machine_type_id,
-        machine_id: form.machine_id,
       },
       rules
     )
@@ -361,21 +360,13 @@ function OperationModal({
         <FormSelect
           label="Machine"
           value={form.machine_id}
-          onChange={e => {
-            setField('machine_id', e.target.value)
-            if (touched.machine_id)
-              setErrors(er => ({ ...er, machine_id: e.target.value ? '' : 'Machine is required' }))
-          }}
-          onBlur={() => handleBlur('machine_id')}
+          onChange={e => setField('machine_id', e.target.value)}
           options={
             specsLoading
               ? [{ value: '', label: 'Loading…' }]
-              : machineSpecs.map(s => ({ value: s.id, label: `${s.machine_id} – ${s.name}` }))
+              : machineSpecs.map(s => ({ value: s.id, label: `${s.machine_no ?? s.id}` }))
           }
-          placeholder={form.machine_type_id ? 'Select machine' : 'Select machine type first'}
-          error={errors.machine_id}
-          touched={touched.machine_id}
-          required
+          placeholder={form.machine_type_id ? 'Select machine (optional)' : 'Select machine type first'}
           disabled={!form.machine_type_id || specsLoading}
         />
 
