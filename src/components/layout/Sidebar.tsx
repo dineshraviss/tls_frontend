@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { ChevronDown, ChevronRight, LayoutDashboard, X, Database } from 'lucide-react'
@@ -29,14 +29,6 @@ const navSections = [
       { label: 'Order',      route: '/masters/order-master' },
       { label: 'Style',      route: '/masters/style-master' },
       { label: 'Defect',     route: '/masters/defect-master' },
-    ],
-  },
-  {
-    key: 'PRODUCTION_PLANNING',
-    title: 'PRODUCTION PLANNING',
-    defaultOpen: false,
-    items: [
-      { label: 'Operation Bulletin (OB)', route: '/production-planning/operation-bulletin' },
     ],
   },
   {
@@ -81,23 +73,9 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [open, setOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(navSections.map(s => [
-      s.key,
-      (s.defaultOpen ?? false) || s.items.some(item => item.route === pathname),
-    ]))
+  const [open, setOpen] = useState<Record<string, boolean>>(
+    Object.fromEntries(navSections.map(s => [s.key, s.defaultOpen ?? false]))
   )
-
-  // Auto-open section when navigating to a route inside it
-  useEffect(() => {
-    setOpen(prev => {
-      const next = { ...prev }
-      navSections.forEach(s => {
-        if (s.items.some(item => item.route === pathname)) next[s.key] = true
-      })
-      return next
-    })
-  }, [pathname])
 
   const isActive = (route: string) => pathname === route
 
