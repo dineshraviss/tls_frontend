@@ -52,13 +52,14 @@ interface Operation {
   uuid: string
   operation_name: string
   code: string
-  sam: string
-  notes: string
+  sam: string | number
+  notes: string | null
   machine_type_id: number | null
   machine_id: number | null
-  machineType?: { id: number; type_name: string; name: string }
-  machine?: { id: number; name: string; machine_id: string }
-  defects?: DefectOption[]
+  machineType?: { id: number; type_name: string }
+  machine?: { id: number; machine_no: string; brand?: string; model_no?: string }
+  defects?: number[]
+  defect_details?: DefectOption[]
   is_active: number
 }
 
@@ -196,11 +197,11 @@ function OperationModal({
   const [form, setForm] = useState<OperationForm>({
     operation_name: operation?.operation_name ?? '',
     code: operation?.code ?? '',
-    sam: operation?.sam ?? '',
+    sam: operation?.sam ? String(operation.sam) : '',
     notes: operation?.notes ?? '',
     machine_type_id: operation?.machine_type_id ? String(operation.machine_type_id) : '',
     machine_id: operation?.machine_id ? String(operation.machine_id) : '',
-    defect_ids: operation?.defects?.map(d => d.id) ?? [],
+    defect_ids: operation?.defect_details?.map(d => d.id) ?? [],
   })
 
   const [machineSpecs, setMachineSpecs] = useState<MachineSpec[]>([])
@@ -408,7 +409,7 @@ function OperationViewPanel({
 }) {
   if (!operation && !loading) return null
 
-  const defects = (operation?.defects as DefectOption[] | undefined) ?? []
+  const defects = (operation?.defect_details as DefectOption[] | undefined) ?? []
   const machine = (operation?.machine as Record<string, unknown> | undefined)
   const machineType = (operation?.machineType as Record<string, unknown> | undefined)
 
@@ -447,11 +448,11 @@ function OperationViewPanel({
                 <span className="text-xs font-medium text-t-body">{String(machineType.type_name)}</span>
               </div>
             )}
-            {!!machine?.machine_id && (
+            {!!machine?.machine_no && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-t-lighter w-24 shrink-0">Machine</span>
                 <span className="text-xs font-mono text-t-body">
-                  {String(machine.machine_id)} – {String(machine.name ?? '')}
+                  {String(machine.machine_no)}{machine.brand ? ` – ${String(machine.brand)}` : ''}
                 </span>
               </div>
             )}
@@ -545,9 +546,11 @@ export default function OperationMasterPage() {
       }>(
         '/operation/list',
         {
+          method: 'GET',
+          encrypt: false,
           payload: {
-            page,
-            per_page: perPage,
+            page: String(page),
+            per_page: String(perPage),
             search,
             ...(filterMachineTypeId ? { machine_type_id: filterMachineTypeId } : {}),
           },
@@ -619,7 +622,7 @@ export default function OperationMasterPage() {
     {
       key: 'machine', header: 'Machine',
       render: (row: Operation) => (
-        <span className="font-mono text-xs text-t-body">{row.machine?.machine_id ?? '—'}</span>
+        <span className="font-mono text-xs text-t-body">{row.machine?.machine_no ?? '—'}</span>
       ),
     },
     {
@@ -631,7 +634,7 @@ export default function OperationMasterPage() {
     {
       key: 'defects', header: 'Defects',
       render: (row: Operation) => (
-        <Badge variant="default">{row.defects?.length ?? 0}</Badge>
+        <Badge variant="default">{row.defect_details?.length ?? row.defects?.length ?? 0}</Badge>
       ),
     },
     {
