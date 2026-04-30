@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
-import { ChevronDown, ChevronRight, LayoutDashboard, X, Database } from 'lucide-react'
+import { ChevronDown, ChevronRight, LayoutDashboard, X, Database, ClipboardList } from 'lucide-react'
 
 const navSections = [
   {
@@ -29,6 +29,19 @@ const navSections = [
       { label: 'Order',      route: '/masters/order-master' },
       { label: 'Style',      route: '/masters/style-master' },
       { label: 'Defect',     route: '/masters/defect-master' },
+    ],
+  },
+  {
+    key: 'PRODUCTION_PLANNING',
+    title: 'PRODUCTION PLANNING',
+    icon: ClipboardList,
+    defaultOpen: false,
+    items: [
+      { label: 'Operation Bulletin',    route: '/production-planning/operation-bulletin' },
+      { label: 'Style Summary',         route: '/production-planning/style-summary' },
+      { label: 'Order Management',      route: '/production-planning/order-management' },
+      { label: 'Style & Order Mapping', route: '/production-planning/style-order-mapping' },
+      { label: 'Order to Line Alloc',   route: '/production-planning/order-line-allocation' },
     ],
   },
   {
@@ -73,9 +86,21 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [open, setOpen] = useState<Record<string, boolean>>(
-    Object.fromEntries(navSections.map(s => [s.key, s.defaultOpen ?? false]))
+  const [open, setOpen] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(navSections.map(s => [
+      s.key,
+      s.items.some(item => item.route === pathname),
+    ]))
   )
+
+  useEffect(() => {
+    const activeKey = navSections.find(s => s.items.some(item => item.route === pathname))?.key
+    setOpen(prev => {
+      const next = { ...prev }
+      navSections.forEach(s => { next[s.key] = s.key === activeKey })
+      return next
+    })
+  }, [pathname])
 
   const isActive = (route: string) => pathname === route
 
