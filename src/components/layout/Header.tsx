@@ -34,6 +34,11 @@ const ROUTE_LABELS: Record<string, string> = {
   '/configuration/tls-line-mapping': 'TLS & Line Mapping',
   '/notifications': 'Notifications',
   '/approval-centre': 'Approval Centre',
+  '/production-planning/operation-bulletin':  'Operation Bulletin (OB)',
+  '/production-planning/style-summary':       'Style Summary',
+  '/production-planning/order-management':    'Order Management',
+  '/production-planning/style-order-mapping': 'Style & Order Mapping',
+  '/production-planning/order-line-allocation': 'Order to Line Allocation',
 }
 
 function getBreadcrumbs(pathname: string) {
@@ -49,6 +54,12 @@ function getBreadcrumbs(pathname: string) {
   if (pathname.startsWith('/configuration/')) {
     return [
       { text: 'Configuration', active: false },
+      { text: label, active: true },
+    ]
+  }
+  if (pathname.startsWith('/production-planning/')) {
+    return [
+      { text: 'Production Planning', active: false },
       { text: label, active: true },
     ]
   }

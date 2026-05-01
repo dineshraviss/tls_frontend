@@ -1,119 +1,190 @@
 'use client'
 
-import { useState } from 'react'
-import Button from '@/components/ui/Button'
+import { useState, useEffect, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { ArrowRight } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
-import Toolbar from '@/components/ui/Toolbar'
-import DataTable from '@/components/ui/DataTable'
-import Modal from '@/components/ui/Modal'
-import FormInput from '@/components/ui/FormInput'
-import FormSelect from '@/components/ui/FormSelect'
-
-interface Operation {
-  id: number
-  code: string
-  machineType: string
-  name: string
-  sam: number
-  defects: number
-}
-
-const initialOps: Operation[] = [
-  { id: 1, code: 'OP-001', machineType: '2T Flatlock', name: 'ARM HOLE PIPING', sam: 0.35, defects: 2 },
-  { id: 2, code: 'OP-002', machineType: '1N SNLS', name: 'BACK POCKET ATTACH', sam: 0.50, defects: 3 },
-  { id: 3, code: 'OP-003', machineType: '3T Overlock', name: 'ATTACH POCKET BINDING', sam: 0.50, defects: 2 },
-  { id: 4, code: 'OP-004', machineType: '2T Flatseam', name: 'ARM HOLE PIPING', sam: 0.50, defects: 0 },
-]
-
-const MACHINE_TYPES = ['2T Flatlock','3T Flatlock','5T Flatlock','1N SNLS','3T Overlock','5T Overlock','2T Flatseam','2N DNLS']
-
-function AddOperationModal({ onClose, onSave }: { onClose: () => void; onSave: (op: Omit<Operation, 'id'>) => void }) {
-  const [form, setForm] = useState({ machineType: '', name: '', code: '', sam: '', defects: '' })
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
-
-  return (
-    <Modal
-      title="Add Operation"
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={() => {
-              onSave({ code: form.code || 'OP-NEW', machineType: form.machineType || MACHINE_TYPES[0], name: form.name || 'NEW OP', sam: parseFloat(form.sam) || 0, defects: 0 })
-              onClose()
-            }}>
-            Add Operation
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-3">
-        <FormSelect
-          label="Machine Type"
-          value={form.machineType}
-          onChange={e => set('machineType', e.target.value)}
-          options={MACHINE_TYPES.map(t => ({ value: t, label: t }))}
-          placeholder="Select type"
-        />
-        <FormInput label="Operation Name" placeholder="e.g. ARM HOLE PIPING" value={form.name} onChange={e => set('name', e.target.value)} autoFocus />
-        <div className="grid grid-cols-2 gap-2.5">
-          <FormInput label="Op Code" placeholder="OP-010" value={form.code} onChange={e => set('code', e.target.value)} />
-          <FormInput label="SAM (minutes)" placeholder="0.5" type="number" step="0.01" value={form.sam} onChange={e => set('sam', e.target.value)} />
-        </div>
-        <FormInput label="Possible Defects" placeholder="+ Add defects" value={form.defects} onChange={e => set('defects', e.target.value)} />
-      </div>
-    </Modal>
-  )
-}
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import Toast from '@/components/ui/Toast'
+import { apiCall } from '@/services/apiClient'
+import { PER_PAGE } from '@/lib/constants'
+import type { ToastData } from '@/components/ui/Toast'
+import type { Operation, MachineTypeGroup, DefectOption } from './_components/types'
+import OperationList from './_components/OperationList'
+import OperationForm from './_components/OperationForm'
+import OperationView from './_components/OperationView'
 
 export default function OperationMasterPage() {
-  const [ops, setOps] = useState<Operation[]>(initialOps)
+  // ── List state ───────────────────────────────────────────────────────────────
+  const [operations, setOperations] = useState<Operation[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filterMachineTypeId, setFilterMachineTypeId] = useState('')
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(PER_PAGE)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+
+  // ── UI state ─────────────────────────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false)
+  const [editOperation, setEditOperation] = useState<Operation | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Operation | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [toast, setToast] = useState<ToastData | null>(null)
+  const [viewOperation, setViewOperation] = useState<Record<string, unknown> | null>(null)
+  const [viewLoading, setViewLoading] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
 
-  const filtered = ops.filter(o =>
-    o.name.toLowerCase().includes(search.toLowerCase()) ||
-    o.machineType.toLowerCase().includes(search.toLowerCase()) ||
-    o.code.toLowerCase().includes(search.toLowerCase())
-  )
+  // ── Reference data ───────────────────────────────────────────────────────────
+  const [machineGroups, setMachineGroups] = useState<MachineTypeGroup[]>([])
+  const [defectOptions, setDefectOptions] = useState<DefectOption[]>([])
 
-  const handleSave = (op: Omit<Operation, 'id'>) => {
-    setOps(prev => [...prev, { ...op, id: prev.length + 1 }])
+  // ── Bootstrap reference data ─────────────────────────────────────────────────
+  useEffect(() => {
+    apiCall<{ data?: MachineTypeGroup[] }>(
+      '/machine/machinelist',
+      { method: 'GET', encrypt: false, payload: { search: '', status: 'ALL' } }
+    ).then(res => setMachineGroups(res.data ?? [])).catch(() => {})
+
+    apiCall<{ data?: { defects?: DefectOption[] } | DefectOption[] }>(
+      '/defect/list',
+      { method: 'GET', encrypt: false, payload: { page: '1', per_page: '500', search: '', status: 'all' } }
+    ).then(res => {
+      const raw = res.data
+      if (Array.isArray(raw)) setDefectOptions(raw)
+      else setDefectOptions((raw as { defects?: DefectOption[] })?.defects ?? [])
+    }).catch(() => {})
+  }, [])
+
+  // ── Fetch operations list ────────────────────────────────────────────────────
+  const fetchOperations = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await apiCall<{
+        data?: { operations?: Operation[]; pagination?: { total: number; total_pages: number } }
+      }>(
+        '/operation/list',
+        {
+          method: 'GET',
+          encrypt: false,
+          payload: {
+            page: String(page),
+            per_page: String(perPage),
+            search,
+            ...(filterMachineTypeId ? { machine_type_id: filterMachineTypeId } : {}),
+          },
+        }
+      )
+      setOperations(res.data?.operations ?? [])
+      setTotalCount(res.data?.pagination?.total ?? 0)
+      setTotalPages(res.data?.pagination?.total_pages ?? 1)
+    } catch { setOperations([]) }
+    finally { setLoading(false) }
+  }, [page, perPage, search, filterMachineTypeId])
+
+  useEffect(() => { fetchOperations() }, [fetchOperations])
+
+  // ── Delete ───────────────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await apiCall<{ success?: boolean; message?: string }>(
+        '/operation/delete',
+        { payload: { uuid: deleteTarget.uuid } }
+      )
+      if (res.success === false) { setToast({ message: res.message || 'Delete failed', type: 'error' }); return }
+      setToast({ message: res.message || 'Operation deleted', type: 'success' })
+      setDeleteTarget(null)
+      fetchOperations()
+    } catch { setToast({ message: 'Failed to delete operation', type: 'error' }) }
+    finally { setDeleting(false) }
   }
 
-  const columns = [
-    { key: 'code', header: 'Code \u2191', render: (row: Operation) => <span className="font-mono text-xs text-t-body">{row.code}</span> },
-    { key: 'machineType', header: 'Machine Type', render: (row: Operation) => <span className="text-t-body">{row.machineType}</span> },
-    { key: 'name', header: 'Operation Name', render: (row: Operation) => <span className="text-t-secondary font-medium">{row.name}</span> },
-    { key: 'sam', header: 'SAM', render: (row: Operation) => <span className="text-t-body">{row.sam}</span> },
-    { key: 'defects', header: 'Defects', render: (row: Operation) => row.defects > 0 ? <span className="text-t-body">{row.defects}</span> : <span className="text-t-lighter">&mdash;</span> },
-    { key: 'actions', header: '', render: () => (
-      <button className="bg-transparent border-none cursor-pointer p-1 text-accent flex hover:text-accent-hover"><ArrowRight size={13} /></button>
-    )},
-  ]
+  // ── View ─────────────────────────────────────────────────────────────────────
+  const handleView = async (uuid: string) => {
+    setViewLoading(true)
+    setViewOperation({})
+    try {
+      const res = await apiCall<{ data?: Record<string, unknown> }>(
+        '/operation/show',
+        { method: 'GET', encrypt: false, payload: { uuid } }
+      )
+      setViewOperation(res.data ?? res)
+    } catch { setViewOperation(null) }
+    finally { setViewLoading(false) }
+  }
+
+  // ── Context menu ─────────────────────────────────────────────────────────────
+  const openMenu = (e: React.MouseEvent<HTMLButtonElement>, id: number) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    setOpenMenuId(id)
+  }
+
+  const allTypes = machineGroups.flatMap(g => g.data)
 
   return (
     <AppLayout>
-      {showModal && <AddOperationModal onClose={() => setShowModal(false)} onSave={handleSave} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <PageHeader title="Operation Master" description="Define sewing operations, machine types, insertion rates and possible defects." />
+      {showModal && (
+        <OperationForm
+          editOperation={editOperation}
+          machineGroups={machineGroups}
+          defectOptions={defectOptions}
+          onClose={() => setShowModal(false)}
+          onSave={msg => { setToast({ message: msg, type: 'success' }); fetchOperations() }}
+        />
+      )}
 
-      <Toolbar
-        title="All Operations"
-        search={search}
-        onSearchChange={setSearch}
-        onAdd={() => setShowModal(true)}
-        addLabel="Add Operation"
+      {viewOperation !== null && (
+        <OperationView
+          viewData={viewLoading ? null : viewOperation}
+          viewLoading={viewLoading}
+          onClose={() => setViewOperation(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Delete Operation"
+          message={<>Are you sure you want to delete <strong>{deleteTarget.operation_name}</strong>?</>}
+          confirmLabel="Delete"
+          onConfirm={handleDelete}
+          onClose={() => setDeleteTarget(null)}
+          loading={deleting}
+          variant="danger"
+        />
+      )}
+
+      <PageHeader
+        title="Operation Master"
+        description="Manage operations with machine assignments, SAM times, and linked defects."
       />
 
-      <DataTable
-        columns={columns}
-        data={filtered}
-        emptyMessage="No operations found"
-        totalCount={filtered.length}
-        countLabel="operation"
+      <OperationList
+        operations={operations}
+        loading={loading}
+        search={search}
+        filterMachineTypeId={filterMachineTypeId}
+        allTypes={allTypes}
+        page={page}
+        perPage={perPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        openMenuId={openMenuId}
+        menuPos={menuPos}
+        onSearchChange={val => { setSearch(val); setPage(1) }}
+        onFilterMachineTypeChange={val => { setFilterMachineTypeId(val); setPage(1) }}
+        onAdd={() => { setEditOperation(null); setShowModal(true) }}
+        onPageChange={setPage}
+        onPerPageChange={setPerPage}
+        onView={handleView}
+        onMenuOpen={openMenu}
+        onMenuClose={() => setOpenMenuId(null)}
+        onEdit={op => { setEditOperation(op); setShowModal(true) }}
+        onDeleteTarget={setDeleteTarget}
       />
     </AppLayout>
   )

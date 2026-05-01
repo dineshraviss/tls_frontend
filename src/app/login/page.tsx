@@ -44,6 +44,7 @@ export default function LoginPage() {
         data?: Record<string, unknown>
       }>('/user/login', {
         payload: { username: data.username, password: data.password },
+        encrypt: false,
       })
 
       const resData = (result.data ?? result) as Record<string, unknown>
