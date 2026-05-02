@@ -36,14 +36,14 @@ export interface CompanyOption {
 
 export interface BranchOption {
   id: number
-  company_id: number
+  company_id?: number
   branch_name: string
 }
 
 export interface ZoneOption {
   id: number
-  company_id: number
-  branch_id: number
+  company_id?: number
+  branch_id?: number
   zone_name: string
 }
 

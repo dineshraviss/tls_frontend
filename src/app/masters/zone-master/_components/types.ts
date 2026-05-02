@@ -18,7 +18,7 @@ export interface CompanyOption {
 
 export interface BranchOption {
   id: number
-  company_id: number
+  company_id?: number
   branch_name: string
 }
 

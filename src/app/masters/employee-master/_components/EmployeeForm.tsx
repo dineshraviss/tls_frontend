@@ -223,7 +223,7 @@ export default function EmployeeForm({
               setErrors(er => ({ ...er, role: validateField(e.target.value, rules.role) }))
             }}
             onBlur={() => handleBlur('role')}
-            options={roles.map(r => ({ value: r.role, label: r.name }))}
+            options={roles.map(r => ({ value: r.role ?? r.id, label: r.name }))}
             placeholder="Select role"
             error={errors.role}
             touched={touched.role}

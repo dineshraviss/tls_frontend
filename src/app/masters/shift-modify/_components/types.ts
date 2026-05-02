@@ -29,7 +29,7 @@ export interface Shift {
 }
 
 export interface BranchOption { id: number; branch_name: string }
-export interface ZoneOption { id: number; zone_name: string; branch_id: number }
+export interface ZoneOption { id: number; zone_name: string; branch_id?: number }
 
 export type FormField = 'shift_name' | 'type' | 'start_time' | 'end_time' | 'hrs' | 'breakMins' | 'branch_id' | 'zone_id'
 export type FormErrors = Partial<Record<string, string>>

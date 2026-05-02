@@ -23,7 +23,7 @@ export interface Employee {
 }
 
 export interface BranchOption { id: number; branch_name: string }
-export interface RoleOption { id: number; uuid: string; name: string; role: number }
+export interface RoleOption { id: number; uuid?: string; name: string; role?: number }
 export interface DeptOption { id: number; name: string; branch_id?: number }
 
 // ── Form types ──
