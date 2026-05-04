@@ -50,6 +50,7 @@ export default function EmployeeForm({
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const filteredDepts = allDepts.filter(
     d => !form.branch_id || d.branch_id === parseInt(form.branch_id)
@@ -99,6 +100,7 @@ export default function EmployeeForm({
     if (hasErrors(allErrors)) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         name: form.name,
@@ -113,16 +115,16 @@ export default function EmployeeForm({
       if (isEdit) {
         payload.uuid = emp.uuid
         const res = await apiCall<{ success?: boolean; message?: string }>('/employee/update', { payload })
-        if (res.success === false) { setErrors({ name: res.message || 'Update failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Update failed'); return }
         onSaved(res.message || 'Employee updated successfully')
       } else {
         const res = await apiCall<{ success?: boolean; message?: string }>('/employee/create', { payload })
-        if (res.success === false) { setErrors({ name: res.message || 'Creation failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Creation failed'); return }
         onSaved(res.message || 'Employee created successfully')
       }
       onClose()
     } catch {
-      setErrors({ name: 'Failed to save employee. Please try again.' })
+      setFormError('Failed to save employee. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -142,6 +144,11 @@ export default function EmployeeForm({
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="emp-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-2.5">
           <FormInput

@@ -26,6 +26,7 @@ export default function DepartmentForm({ dept, branches, onClose, onSave }: Depa
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const set = (key: FormField, val: string) => {
     setForm(f => ({ ...f, [key]: val }))
@@ -46,6 +47,7 @@ export default function DepartmentForm({ dept, branches, onClose, onSave }: Depa
     if (hasErrors(allErrors)) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         name: form.name,
@@ -54,16 +56,16 @@ export default function DepartmentForm({ dept, branches, onClose, onSave }: Depa
       if (isEdit) {
         payload.uuid = dept.uuid
         const res = await apiCall<{ success?: boolean; message?: string }>('/department/update', { payload })
-        if (res.success === false) { setErrors({ name: res.message || 'Update failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Update failed'); return }
         onSave(res.message || 'Department updated successfully')
       } else {
         const res = await apiCall<{ success?: boolean; message?: string }>('/department/create', { payload })
-        if (res.success === false) { setErrors({ name: res.message || 'Creation failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Creation failed'); return }
         onSave(res.message || 'Department created successfully')
       }
       onClose()
     } catch {
-      setErrors({ name: 'Failed to save department. Please try again.' })
+      setFormError('Failed to save department. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -82,6 +84,11 @@ export default function DepartmentForm({ dept, branches, onClose, onSave }: Depa
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="dept-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <FormInput
           label="Department Name"

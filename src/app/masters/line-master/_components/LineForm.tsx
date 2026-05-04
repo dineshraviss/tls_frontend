@@ -46,6 +46,7 @@ export default function LineForm({
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const filteredBranches = allBranches.filter(b => b.company_id === parseInt(companyId))
   const filteredZones = allZones.filter(z =>
@@ -99,6 +100,7 @@ export default function LineForm({
     if (hasErrors(allErrors) || slotsError) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         zone_id: zoneId,
@@ -110,16 +112,16 @@ export default function LineForm({
       if (isEdit) {
         payload.uuid = line.uuid
         const res = await apiCall<{ success?: boolean; message?: string }>('/line/update', { payload })
-        if (res.success === false) { setErrors({ line_name: res.message || 'Update failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Update failed'); return }
         onSave(res.message || 'Line updated successfully')
       } else {
         const res = await apiCall<{ success?: boolean; message?: string }>('/line/create', { payload })
-        if (res.success === false) { setErrors({ line_name: res.message || 'Creation failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Creation failed'); return }
         onSave(res.message || 'Line created successfully')
       }
       onClose()
     } catch {
-      setErrors({ line_name: 'Failed to save line. Please try again.' })
+      setFormError('Failed to save line. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -139,6 +141,11 @@ export default function LineForm({
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="line-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <FormSelect
           label="Company"

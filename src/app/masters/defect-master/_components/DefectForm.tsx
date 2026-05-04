@@ -53,6 +53,7 @@ export default function DefectForm({
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const setField = (key: keyof DefectFormState, val: string | boolean) => {
     if (key === 'escalation_flag') {
@@ -94,6 +95,7 @@ export default function DefectForm({
     }
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         defect_name: form.defect_name,
@@ -107,12 +109,12 @@ export default function DefectForm({
 
       const res = await onSave(payload)
       if (res.success === false) {
-        setErrors({ defect_name: res.message || 'Save failed' })
+        setFormError(res.message || 'Save failed')
         return
       }
       onClose()
     } catch {
-      setErrors({ defect_name: 'Failed to save defect. Please try again.' })
+      setFormError('Failed to save defect. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -132,6 +134,11 @@ export default function DefectForm({
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="defect-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <FormInput
           label="Defect Name"

@@ -38,6 +38,7 @@ export default function WorkstationForm({
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const filteredLines = allLines.filter(l => !form.branch_id || l.branch_id === parseInt(form.branch_id))
 
@@ -66,6 +67,7 @@ export default function WorkstationForm({
     if (hasErrors(allErrors)) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         name: form.name,
@@ -77,16 +79,16 @@ export default function WorkstationForm({
         payload.uuid = ws.uuid
         payload.code = ws.code
         const res = await apiCall<{ success?: boolean; message?: string }>('/workstation/update', { payload })
-        if (res.success === false) { setErrors({ name: res.message || 'Update failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Update failed'); return }
         onSave(res.message || 'Workstation updated successfully')
       } else {
         const res = await apiCall<{ success?: boolean; message?: string }>('/workstation/create', { payload })
-        if (res.success === false) { setErrors({ name: res.message || 'Creation failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Creation failed'); return }
         onSave(res.message || 'Workstation created successfully')
       }
       onClose()
     } catch {
-      setErrors({ name: 'Failed to save workstation. Please try again.' })
+      setFormError('Failed to save workstation. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -105,6 +107,11 @@ export default function WorkstationForm({
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="ws-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <FormInput
           label="Workstation Name"

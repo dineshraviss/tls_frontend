@@ -40,6 +40,7 @@ export default function ShiftMasterForm({ shift, branches, allZones, onClose, on
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const filteredZones = allZones.filter(z => z.branch_id === parseInt(form.branch_id))
 
@@ -71,21 +72,22 @@ export default function ShiftMasterForm({ shift, branches, allZones, onClose, on
     if (hasErrors(allErrors)) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = { ...form }
       if (isEdit) {
         payload.uuid = shift.uuid
         const res = await apiCall<{ success?: boolean; message?: string }>('/shift/update', { payload })
-        if (res.success === false) { setErrors({ shift_name: res.message || 'Update failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Update failed'); return }
         onSave(res.message || 'Shift updated successfully')
       } else {
         const res = await apiCall<{ success?: boolean; message?: string }>('/shift/create', { payload })
-        if (res.success === false) { setErrors({ shift_name: res.message || 'Creation failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Creation failed'); return }
         onSave(res.message || 'Shift created successfully')
       }
       onClose()
     } catch {
-      setErrors({ shift_name: 'Failed to save shift. Please try again.' })
+      setFormError('Failed to save shift. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -109,6 +111,11 @@ export default function ShiftMasterForm({ shift, branches, allZones, onClose, on
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="shift-form" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-0">
           {/* ── Left Column ── */}

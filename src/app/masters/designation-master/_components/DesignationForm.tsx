@@ -30,6 +30,7 @@ export default function DesignationForm({
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const set = (key: FormField, val: string) => {
     setForm(f => ({ ...f, [key]: val }))
@@ -50,6 +51,7 @@ export default function DesignationForm({
     if (hasErrors(allErrors)) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         designation_name: form.designation_name,
@@ -59,12 +61,12 @@ export default function DesignationForm({
 
       const res = await onSave(payload)
       if (res.success === false) {
-        setErrors({ designation_name: res.message || (isEdit ? 'Update failed' : 'Creation failed') })
+        setFormError(res.message || (isEdit ? 'Update failed' : 'Creation failed'))
         return
       }
       onClose()
     } catch {
-      setErrors({ designation_name: 'Failed to save designation. Please try again.' })
+      setFormError('Failed to save designation. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -83,6 +85,11 @@ export default function DesignationForm({
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="designation-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <FormInput
           label="Designation Name"

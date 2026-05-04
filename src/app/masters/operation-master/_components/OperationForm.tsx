@@ -144,6 +144,7 @@ export default function OperationForm({
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const fetchSpecs = useCallback(async (machineTypeId: string) => {
     if (!machineTypeId) { setMachineSpecs([]); return }
@@ -200,6 +201,7 @@ export default function OperationForm({
     if (hasErrors(allErrors)) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         operation_name: form.operation_name,
@@ -217,11 +219,11 @@ export default function OperationForm({
       } else {
         res = await apiCall('/operation/create', { payload })
       }
-      if (res.success === false) { setErrors({ operation_name: res.message || 'Save failed' }); return }
+      if (res.success === false) { setFormError(res.message || 'Save failed'); return }
       onSave(res.message || (isEdit ? 'Operation updated' : 'Operation created'))
       onClose()
     } catch {
-      setErrors({ operation_name: 'Failed to save operation. Please try again.' })
+      setFormError('Failed to save operation. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -241,6 +243,11 @@ export default function OperationForm({
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="operation-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
           <FormInput
