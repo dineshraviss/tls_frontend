@@ -40,8 +40,9 @@ export default function MachineHubSpecForm({ spec, machineTypeId, onClose, onSav
   const [file, setFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [fieldError, setFieldError] = useState('')
+  const [formError, setFormError] = useState('')
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: string, v: string) => { setForm(f => ({ ...f, [k]: v })); setFormError('') }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,6 +51,7 @@ export default function MachineHubSpecForm({ spec, machineTypeId, onClose, onSav
       return
     }
     setSaving(true)
+    setFormError('')
     try {
       let res: { success?: boolean | number; message?: string }
       if (isEdit) {
@@ -71,15 +73,13 @@ export default function MachineHubSpecForm({ spec, machineTypeId, onClose, onSav
         res = await apiUpload('/specification/create', fd)
       }
       if (!res.success) {
-        onError(res.message || 'Save failed')
-        onClose()
+        setFormError(res.message || 'Save failed')
         return
       }
       onSaved(res.message || (isEdit ? 'Specification updated' : 'Specification created'))
       onClose()
     } catch {
-      onError('Failed to save specification')
-      onClose()
+      setFormError('Failed to save specification')
     } finally {
       setSaving(false)
     }
@@ -101,6 +101,11 @@ export default function MachineHubSpecForm({ spec, machineTypeId, onClose, onSav
       size="lg"
       footer={footer}
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="spec-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
           <FormInput
