@@ -347,7 +347,7 @@ export default function OperationBulletinPage() {
           style_id: null,
         },
         bulletin_list: computedRows.map(row => ({
-          machine_id: row.machine_id,
+          ...(row.machine_id !== null ? { machine_id: row.machine_id } : {}),
           operation_id: row.operationId,
           seq_no: row.seq,
           target_hun_hr: r2(row.sam > 0 ? WORKING_MINS / row.sam : 0),
@@ -398,7 +398,7 @@ export default function OperationBulletinPage() {
     try {
       const res = await apiCall<{ success?: boolean; message?: string }>(
         '/styles/create',
-        { payload: { buyer: styleForm.buyer, style_name: styleForm.style_name, ...(savedObId ? { operation_bulletin_id: String(savedObId) } : {}) } }
+        { payload: { buyer: styleForm.buyer, style_no: styleForm.style_no, style_name: styleForm.style_name, ...(savedObId ? { operation_bulletin_id: savedObId } : {}) } }
       )
       if (res.success === false) { setStyleError(res.message || 'Failed to create style'); return }
       setToast({ message: res.message || 'Style created successfully', type: 'success' })
