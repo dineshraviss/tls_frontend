@@ -175,10 +175,6 @@ export default function StyleList({
           <Download size={13} /> Export <ChevronDown size={11} />
         </button>
 
-        {/* Add button */}
-        <Button variant="primary" size="sm" onClick={onAdd}>
-          + Add Operation Bulletin (OB) Style
-        </Button>
       </div>
 
       <DataTable<Style>

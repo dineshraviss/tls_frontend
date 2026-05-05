@@ -20,6 +20,7 @@ interface LeftOp {
   code: string
   sam: string | number
   machine_type_id: number | null
+  machine_id?: number | null
   machineType?: { id: number; type_name: string }
   machine?: { id: number; machine_no: string }
 }
@@ -130,10 +131,11 @@ function PreviewModal({
           <p className="text-xs font-medium text-t-body mb-3">Allocated manning</p>
           <div className="flex items-start gap-8 flex-wrap">
             <input
-              type="number" value={allocManning}
-              onChange={e => onAllocChange(Math.max(0, Number(e.target.value)))}
+              type="text"
+              inputMode="numeric"
+              value={allocManning}
+              onChange={e => { const v = e.target.value.replace(/\D/g, ''); onAllocChange(v === '' ? 0 : parseInt(v, 10)) }}
               className="w-20 h-9 px-2.5 text-sm2 text-t-secondary bg-input border border-input-line rounded-input outline-none focus:border-accent"
-              min={0}
             />
             <div className="flex gap-8 flex-wrap">
               <StatPill value={fmt(r2(alloc100Day))} label="Alloc Manning 60%/Hr" />
@@ -224,6 +226,11 @@ export default function OperationBulletinPage() {
   const [toast, setToast] = useState<ToastData | null>(null)
   const [leftLoading, setLeftLoading] = useState(true)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [savedObId, setSavedObId] = useState<number | null>(null)
+  const [showStyleModal, setShowStyleModal] = useState(false)
+  const [styleForm, setStyleForm] = useState({ buyer: '', style_no: '', style_name: '' })
+  const [styleSaving, setStyleSaving] = useState(false)
+  const [styleError, setStyleError] = useState('')
 
   const dragOpRef = useRef<LeftOp | null>(null)
   const dragRowIdx = useRef<number | null>(null)
@@ -270,7 +277,7 @@ export default function OperationBulletinPage() {
       operationName: op.operation_name,
       machineTypeId: op.machineType?.id ?? op.machine_type_id ?? null,
       machineTypeName: op.machineType?.type_name ?? '—',
-      machine_id: op.machine?.id ?? null,
+      machine_id: op.machine?.id ?? op.machine_id ?? null,
       sam: Math.max(0.01, parseFloat(String(op.sam)) || 0.35),
       seq: maxSeq + (i + 1) * 10,
       alloc: allocManning || 1,  // default alloc = top input value
@@ -343,22 +350,24 @@ export default function OperationBulletinPage() {
           machine_id: row.machine_id,
           operation_id: row.operationId,
           seq_no: row.seq,
-          target_hun_hr: r2(row.row100Hr),
+          target_hun_hr: r2(row.sam > 0 ? WORKING_MINS / row.sam : 0),
           req_manning: r2(row.reqManning),
           all_manning: row.alloc,
-          all_manning_target_hun_hr: r2(row.allocManni100Hr),
+          all_manning_target_hun_hr: r2(row.alloc * (row.sam > 0 ? WORKING_MINS / row.sam : 0)),
           order_id: null,
           sam: row.sam,
         })),
       }
-      const res = await apiCall<{ success?: boolean; message?: string }>(
+      const res = await apiCall<{ success?: boolean; message?: string; data?: { id?: number } }>(
         '/operationbullatin/create', { payload }
       )
       if (res.success === false) { setToast({ message: res.message || 'Save failed', type: 'error' }); return }
-      setToast({ message: res.message || 'Operation Bulletin saved', type: 'success' })
+      const obId = res.data?.id ?? null
+      setSavedObId(obId)
       setShowPreview(false)
-      setObRows([])
-      setAllocManning(0)
+      setStyleForm({ buyer: '', style_no: '', style_name: '' })
+      setStyleError('')
+      setShowStyleModal(true)
     } catch { setToast({ message: 'Failed to save OB', type: 'error' }) }
     finally { setSaving(false) }
   }
@@ -380,6 +389,27 @@ export default function OperationBulletinPage() {
 
   const selectedOps = leftOps.filter(o => selectedIds.has(o.id))
 
+  // ── Create Style after OB save ────────────────────────────────────────────────
+  const handleCreateStyle = async () => {
+    if (!styleForm.buyer.trim()) { setStyleError('Buyer is required'); return }
+    if (!styleForm.style_name.trim()) { setStyleError('Style name is required'); return }
+    setStyleSaving(true)
+    setStyleError('')
+    try {
+      const res = await apiCall<{ success?: boolean; message?: string }>(
+        '/styles/create',
+        { payload: { buyer: styleForm.buyer, style_name: styleForm.style_name, ...(savedObId ? { operation_bulletin_id: String(savedObId) } : {}) } }
+      )
+      if (res.success === false) { setStyleError(res.message || 'Failed to create style'); return }
+      setToast({ message: res.message || 'Style created successfully', type: 'success' })
+      setShowStyleModal(false)
+      setObRows([])
+      setAllocManning(0)
+      setSavedObId(null)
+    } catch { setStyleError('Failed to create style. Please try again.') }
+    finally { setStyleSaving(false) }
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <AppLayout>
@@ -394,6 +424,94 @@ export default function OperationBulletinPage() {
           onConfirm={handleConfirmSave}
           saving={saving}
         />
+      )}
+
+      {showStyleModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-modal rounded-card shadow-2xl w-full max-w-md flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-table-line">
+              <h2 className="text-base font-semibold text-t-primary">Save OB → Create Style</h2>
+              <button onClick={() => { setShowStyleModal(false); setObRows([]); setAllocManning(0) }}
+                className="bg-transparent border-none cursor-pointer text-t-lighter hover:text-t-primary p-1">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 flex flex-col gap-3">
+              {styleError && (
+                <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+                  {styleError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-t-body">Buyer <span className="text-red-400">*</span></label>
+                  <input
+                    type="text" value={styleForm.buyer} placeholder="e.g. Kaibi, M&S"
+                    onChange={e => { setStyleForm(f => ({ ...f, buyer: e.target.value })); setStyleError('') }}
+                    className="w-full h-input-h px-2.5 text-sm2 bg-input border border-input-line rounded-input outline-none focus:border-accent text-t-secondary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-t-body">Style Number</label>
+                  <input
+                    type="text" value={styleForm.style_no} placeholder="e.g. Et2535"
+                    onChange={e => setStyleForm(f => ({ ...f, style_no: e.target.value }))}
+                    className="w-full h-input-h px-2.5 text-sm2 bg-input border border-input-line rounded-input outline-none focus:border-accent text-t-secondary"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-t-body">Style Name <span className="text-red-400">*</span></label>
+                <input
+                  type="text" value={styleForm.style_name} placeholder="e.g. Legging, Polo T-Shirt"
+                  onChange={e => { setStyleForm(f => ({ ...f, style_name: e.target.value })); setStyleError('') }}
+                  className="w-full h-input-h px-2.5 text-sm2 bg-input border border-input-line rounded-input outline-none focus:border-accent text-t-secondary"
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="rounded-lg border border-table-line bg-table-head px-4 py-3">
+                <p className="text-xs font-semibold text-t-lighter mb-2">
+                  Style Preview | {styleForm.buyer || '—'} | {styleForm.style_no || '—'} | {styleForm.style_name || '—'}
+                </p>
+                <div className="flex gap-6">
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-t-primary">{obRows.length}</span>
+                    <span className="text-xs text-t-lighter">operations</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-t-primary">{r2(totalSam).toFixed(2)}</span>
+                    <span className="text-xs text-t-lighter">Total SAM</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-t-primary">{r2(allocTotal)}</span>
+                    <span className="text-xs text-t-lighter">Manning</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-table-line">
+              <button
+                onClick={() => { setShowStyleModal(false); setObRows([]); setAllocManning(0) }}
+                className="h-9 px-4 text-sm font-medium text-t-secondary bg-transparent border border-input-line rounded-input hover:bg-table-head transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateStyle}
+                disabled={styleSaving}
+                className="h-9 px-4 text-sm font-medium text-white bg-accent rounded-input hover:opacity-90 transition-opacity disabled:opacity-60">
+                {styleSaving ? 'Saving...' : 'Add Style'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="flex flex-col h-full overflow-hidden">
@@ -524,11 +642,11 @@ export default function OperationBulletinPage() {
               <div className="flex flex-col items-center justify-center px-5 py-3 border-r border-table-line shrink-0">
                 <p className="text-2xs text-t-lighter mb-1.5 whitespace-nowrap">Allocated manning</p>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={allocManning}
-                  onChange={e => setAllocManning(Math.max(0, Number(e.target.value)))}
+                  onChange={e => { const v = e.target.value.replace(/\D/g, ''); setAllocManning(v === '' ? 0 : parseInt(v, 10)) }}
                   className="w-16 h-7 px-2 text-sm text-center font-bold text-t-primary bg-input border border-input-line rounded-input outline-none focus:border-accent"
-                  min={0}
                 />
               </div>
               {/* 4 stat cells — equal width */}
