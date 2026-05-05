@@ -23,6 +23,7 @@ export default function MachineHubTypeForm({ editType, onClose, onSaved, onError
   })
   const [saving, setSaving] = useState(false)
   const [fieldError, setFieldError] = useState('')
+  const [formError, setFormError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,6 +32,7 @@ export default function MachineHubTypeForm({ editType, onClose, onSaved, onError
       return
     }
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = { type_name: form.type_name, notes: form.notes }
       if (isEdit) payload.uuid = editType.uuid
@@ -39,15 +41,13 @@ export default function MachineHubTypeForm({ editType, onClose, onSaved, onError
         { payload }
       )
       if (!res.success) {
-        onError(res.message || (isEdit ? 'Update failed' : 'Create failed'))
-        onClose()
+        setFormError(res.message || (isEdit ? 'Update failed' : 'Create failed'))
         return
       }
       onSaved(res.message || (isEdit ? 'Machine type updated' : 'Machine type created'))
       onClose()
     } catch {
-      onError(isEdit ? 'Failed to update machine type' : 'Failed to create machine type')
-      onClose()
+      setFormError(isEdit ? 'Failed to update machine type' : 'Failed to create machine type')
     } finally {
       setSaving(false)
     }
@@ -64,6 +64,11 @@ export default function MachineHubTypeForm({ editType, onClose, onSaved, onError
 
   return (
     <Modal title={isEdit ? 'Edit Machine Type' : 'Add Machine Type'} onClose={onClose} footer={footer}>
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="machine-type-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <FormInput
           label="Machine Type Name"

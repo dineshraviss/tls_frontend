@@ -40,8 +40,8 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
           {...props}
         >
           <option value="">{placeholder}</option>
-          {options.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          {options.map((opt, i) => (
+            <option key={`${opt.value}-${i}`} value={opt.value}>{opt.label}</option>
           ))}
         </select>
         {showError && (

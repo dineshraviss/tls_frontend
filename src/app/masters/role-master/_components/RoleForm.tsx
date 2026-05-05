@@ -26,6 +26,7 @@ export default function RoleForm({ role, onClose, onSave }: RoleFormProps) {
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
+  const [formError, setFormError] = useState('')
 
   const set = (key: FormField, val: string) => {
     setForm(f => ({ ...f, [key]: val }))
@@ -46,6 +47,7 @@ export default function RoleForm({ role, onClose, onSave }: RoleFormProps) {
     if (hasErrors(allErrors)) return
 
     setSaving(true)
+    setFormError('')
     try {
       const payload: Record<string, unknown> = {
         name: form.name,
@@ -55,16 +57,16 @@ export default function RoleForm({ role, onClose, onSave }: RoleFormProps) {
       if (isEdit) {
         payload.uuid = role.uuid
         const res = await api.update(payload)
-        if (res.success === false) { setErrors({ name: res.message || 'Update failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Update failed'); return }
         onSave(res.message || 'Role updated successfully')
       } else {
         const res = await api.create(payload)
-        if (res.success === false) { setErrors({ name: res.message || 'Creation failed' }); return }
+        if (res.success === false) { setFormError(res.message || 'Creation failed'); return }
         onSave(res.message || 'Role created successfully')
       }
       onClose()
     } catch {
-      setErrors({ name: 'Failed to save role. Please try again.' })
+      setFormError('Failed to save role. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -83,6 +85,11 @@ export default function RoleForm({ role, onClose, onSave }: RoleFormProps) {
         </>
       }
     >
+      {formError && (
+        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+          {formError}
+        </div>
+      )}
       <form id="role-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
         <FormInput
           label="Role Name"
