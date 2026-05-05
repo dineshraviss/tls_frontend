@@ -250,6 +250,9 @@ export default function OperationBulletinPage() {
 
   const computedRows = obRows.map(r => ({ ...r, ...calcRow(r, line100TgtHr) }))
 
+  // Excel G39 = SUM(G27:G38) — total of per-row Req Manning column
+  const totalReqManning = computedRows.reduce((s, r) => s + r.reqManning, 0)
+
   // ── Fetch left ops ────────────────────────────────────────────────────────────
   const fetchOps = useCallback(async () => {
     setLeftLoading(true)
@@ -543,6 +546,7 @@ export default function OperationBulletinPage() {
         <div className="flex border-b border-table-line shrink-0 bg-table-head">
           <StatCard value={`${SHIFT_HOURS} hrs`} label="Shift Hrs" />
           <StatCard value={WORKING_MINS} label="Working Min" />
+          <StatCard value={r2(totalReqManning).toFixed(2)} label="Req Manning" />
           <StatCard value={obRows.length} label="Operations" />
           <StatCard value={r2(totalSam).toFixed(2)} label="Total SAM" />
           <StatCard value={fmt(r2(line100TgtHr))} label="100% Target/Hr" />
