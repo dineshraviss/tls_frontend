@@ -217,7 +217,7 @@ function PreviewModal({
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function OperationBulletinPage() {
   const [obRows, setObRows] = useState<OBRow[]>([])
-  const [reqManningLevel, setReqManningLevel] = useState(0)  // Excel B24 — drives D23 & G column
+  const [reqManningLevel, setReqManningLevel] = useState(18)  // Excel B24 — drives D23 & G column
   const [allocManning, setAllocManning] = useState(0)        // Excel H default — drives Alloc column only
   const [leftOps, setLeftOps] = useState<LeftOp[]>([])
   const [leftSearch, setLeftSearch] = useState('')
@@ -544,16 +544,7 @@ export default function OperationBulletinPage() {
         <div className="flex border-b border-table-line shrink-0 bg-table-head">
           <StatCard value={`${SHIFT_HOURS} hrs`} label="Shift Hrs" />
           <StatCard value={WORKING_MINS} label="Working Min" />
-          {/* Req Manning = Excel B24 — editable, drives D23 & G column */}
-          <div className="flex flex-col items-center justify-center flex-1 px-4 py-3.5 border-r border-table-line">
-            <input
-              type="text" inputMode="numeric" value={reqManningLevel || ''}
-              onChange={e => { const v = e.target.value.replace(/\D/g, ''); setReqManningLevel(v === '' ? 0 : parseInt(v, 10)) }}
-              placeholder="0"
-              className="w-16 h-7 px-2 text-sm text-center font-bold text-t-primary bg-input border border-input-line rounded-input outline-none focus:border-accent"
-            />
-            <span className="text-2xs text-t-lighter mt-0.5 whitespace-nowrap">Req Manning</span>
-          </div>
+          <StatCard value={reqManningLevel} label="Req Manning" />
           <StatCard value={obRows.length} label="Operations" />
           <StatCard value={r2(totalSam).toFixed(2)} label="Total SAM" />
           <StatCard value={fmt(r2(line100TgtHr))} label="100% Target/Hr" />
