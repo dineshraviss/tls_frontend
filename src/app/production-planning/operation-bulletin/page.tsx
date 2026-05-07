@@ -422,7 +422,7 @@ export default function OperationBulletinPage() {
         <PreviewModal
           rows={computedRows}
           allocManning={allocManning}
-          onAllocChange={setAllocManning}
+          onAllocChange={(n) => { setAllocManning(n); setObRows(prev => prev.map(r => ({ ...r, alloc: n || 1 }))) }}
           onClose={() => setShowPreview(false)}
           onConfirm={handleConfirmSave}
           saving={saving}
@@ -649,7 +649,12 @@ export default function OperationBulletinPage() {
                   type="text"
                   inputMode="numeric"
                   value={allocManning}
-                  onChange={e => { const v = e.target.value.replace(/\D/g, ''); setAllocManning(v === '' ? 0 : parseInt(v, 10)) }}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '')
+                    const n = v === '' ? 0 : parseInt(v, 10)
+                    setAllocManning(n)
+                    setObRows(prev => prev.map(r => ({ ...r, alloc: n || 1 })))
+                  }}
                   className="w-16 h-7 px-2 text-sm text-center font-bold text-t-primary bg-input border border-input-line rounded-input outline-none focus:border-accent"
                 />
               </div>
