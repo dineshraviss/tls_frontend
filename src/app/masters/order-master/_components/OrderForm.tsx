@@ -31,6 +31,7 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
       : [{ size: '', ord_qty: '', prod_per: '' }]
   )
   const [styles, setStyles] = useState<StyleOption[]>([])
+  const [colours, setColours] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<FormTouched>({})
@@ -45,6 +46,13 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
         const d = res.data as unknown as { styles?: StyleOption[]; records?: StyleOption[] } | undefined
         setStyles(d?.styles ?? d?.records ?? [])
       })
+      .catch(() => {})
+
+    apiCall<{ data?: { colors?: string[] } }>(
+      '/order/getcolors',
+      { method: 'GET', encrypt: false }
+    )
+      .then(res => setColours(res.data?.colors ?? []))
       .catch(() => {})
   }, [])
 
@@ -130,12 +138,17 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
             touched={touched.order_no}
             required
           />
-          <FormInput
+          <FormSelect
             label="Colour"
             value={form.colour}
-            onChange={e => setField('colour', e.target.value)}
+            onChange={e => {
+              setField('colour', e.target.value)
+              if (touched.colour)
+                setErrors(er => ({ ...er, colour: e.target.value ? '' : 'Colour is required' }))
+            }}
             onBlur={() => handleBlur('colour')}
-            placeholder="e.g. Red"
+            options={colours.map(c => ({ value: c, label: c }))}
+            placeholder="Select colour"
             error={errors.colour}
             touched={touched.colour}
             required
