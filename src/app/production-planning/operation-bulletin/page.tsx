@@ -176,7 +176,7 @@ function PreviewModal({
                   <td className="px-3 py-2 text-right font-mono text-t-secondary">{r2(row.sam).toFixed(2)}</td>
                   <td className="px-3 py-2 text-right font-semibold text-accent">{fmt(r2(row.row100Hr))}</td>
                   <td className="px-3 py-2 text-right text-t-body">{r2(row.reqManning).toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right text-t-body">{r2(row.reqManning).toFixed(2)}</td>
+                  <td className="px-3 py-2 text-right text-t-body">0.00</td>
                   <td className="px-3 py-2 text-right text-t-body">{row.alloc.toFixed(2)}</td>
                   <td className="px-3 py-2 text-right font-mono text-t-secondary">{fmt(r2(row.allocManni100Hr))}</td>
                   <td className="px-2 py-2 text-t-lighter"><Trash2 size={12} /></td>
@@ -217,7 +217,8 @@ function PreviewModal({
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function OperationBulletinPage() {
   const [obRows, setObRows] = useState<OBRow[]>([])
-  const [allocManning, setAllocManning] = useState(0)
+  const [reqManningLevel, setReqManningLevel] = useState(18)  // Excel B24 — drives D23 & G column
+  const [allocManning, setAllocManning] = useState(0)        // Excel H default — drives Alloc column only
   const [leftOps, setLeftOps] = useState<LeftOp[]>([])
   const [leftSearch, setLeftSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
@@ -240,11 +241,11 @@ export default function OperationBulletinPage() {
   const totalSam = obRows.reduce((s, r) => s + r.sam, 0)
   const allocTotal = obRows.reduce((s, r) => s + r.alloc, 0) // sum of per-row alloc (Excel B25)
 
-  // Line 100% target (D23 in Excel) = allocManning × 60 / totalSam
-  const line100TgtHr = totalSam > 0 ? allocManning * 60 / totalSam : 0
-  const line100TgtDay = totalSam > 0 ? allocManning * WORKING_MINS / totalSam : 0
+  // D23 in Excel = B24×60/totalSam — uses reqManningLevel (B24), NOT allocManning
+  const line100TgtHr = totalSam > 0 ? reqManningLevel * 60 / totalSam : 0
+  const line100TgtDay = totalSam > 0 ? reqManningLevel * WORKING_MINS / totalSam : 0
 
-  // Alloc-based targets (using sum of per-row alloc)
+  // Alloc-based targets (using sum of per-row alloc = Excel B25)
   const alloc100Hr = totalSam > 0 ? allocTotal * 60 / totalSam : 0
   const alloc100Day = totalSam > 0 ? allocTotal * WORKING_MINS / totalSam : 0
 
@@ -333,7 +334,7 @@ export default function OperationBulletinPage() {
         operation_bulletin_data: {
           shift_hours: SHIFT_HOURS,
           working_mins: WORKING_MINS,
-          req_manning: r2(allocManning),
+          req_manning: r2(reqManningLevel),
           allocated_manning: r2(allocTotal),
           req_target_hun_hr: r2(line100TgtHr),
           req_target_hun_day: r2(line100TgtDay),
@@ -347,7 +348,7 @@ export default function OperationBulletinPage() {
           style_id: null,
         },
         bulletin_list: computedRows.map(row => ({
-          machine_id: row.machine_id,
+          ...(row.machine_id !== null ? { machine_id: row.machine_id } : {}),
           operation_id: row.operationId,
           seq_no: row.seq,
           target_hun_hr: r2(row.sam > 0 ? WORKING_MINS / row.sam : 0),
@@ -398,7 +399,7 @@ export default function OperationBulletinPage() {
     try {
       const res = await apiCall<{ success?: boolean; message?: string }>(
         '/styles/create',
-        { payload: { buyer: styleForm.buyer, style_name: styleForm.style_name, ...(savedObId ? { operation_bulletin_id: String(savedObId) } : {}) } }
+        { payload: { buyer: styleForm.buyer, style_no: styleForm.style_no, style_name: styleForm.style_name, ...(savedObId ? { operation_bulletin_id: savedObId } : {}) } }
       )
       if (res.success === false) { setStyleError(res.message || 'Failed to create style'); return }
       setToast({ message: res.message || 'Style created successfully', type: 'success' })
@@ -419,7 +420,7 @@ export default function OperationBulletinPage() {
         <PreviewModal
           rows={computedRows}
           allocManning={allocManning}
-          onAllocChange={setAllocManning}
+          onAllocChange={(n) => { setAllocManning(n); setObRows(prev => prev.map(r => ({ ...r, alloc: n || 1 }))) }}
           onClose={() => setShowPreview(false)}
           onConfirm={handleConfirmSave}
           saving={saving}
@@ -543,6 +544,7 @@ export default function OperationBulletinPage() {
         <div className="flex border-b border-table-line shrink-0 bg-table-head">
           <StatCard value={`${SHIFT_HOURS} hrs`} label="Shift Hrs" />
           <StatCard value={WORKING_MINS} label="Working Min" />
+          <StatCard value={reqManningLevel} label="Req Manning" />
           <StatCard value={obRows.length} label="Operations" />
           <StatCard value={r2(totalSam).toFixed(2)} label="Total SAM" />
           <StatCard value={fmt(r2(line100TgtHr))} label="100% Target/Hr" />
@@ -645,7 +647,12 @@ export default function OperationBulletinPage() {
                   type="text"
                   inputMode="numeric"
                   value={allocManning}
-                  onChange={e => { const v = e.target.value.replace(/\D/g, ''); setAllocManning(v === '' ? 0 : parseInt(v, 10)) }}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '')
+                    const n = v === '' ? 0 : parseInt(v, 10)
+                    setAllocManning(n)
+                    setObRows(prev => prev.map(r => ({ ...r, alloc: n || 1 })))
+                  }}
                   className="w-16 h-7 px-2 text-sm text-center font-bold text-t-primary bg-input border border-input-line rounded-input outline-none focus:border-accent"
                 />
               </div>
@@ -737,10 +744,8 @@ export default function OperationBulletinPage() {
                           {r2(row.reqManning).toFixed(2)}
                         </td>
 
-                        {/* Manning — read-only (same as Req Manni, shown for reference) */}
-                        <td className="px-3 py-2 text-right text-t-body">
-                          {r2(row.reqManning).toFixed(2)}
-                        </td>
+                        {/* Manning — static display, not calculated */}
+                        <td className="px-3 py-2 text-right text-t-body">0.00</td>
 
                         {/* Alloc — per-row editable stepper (Excel H, default = allocManning) */}
                         <td className="px-2 py-1.5">
