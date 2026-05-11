@@ -39,7 +39,7 @@ interface OBRow {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function r2(n: number) { return Math.round(n * 100) / 100 }
+function formatValue(val: number) { return parseFloat(Number(val).toFixed(2)) }
 function fmt(n: number) {
   if (!isFinite(n) || n === 0) return '0'
   return n.toLocaleString('en-IN', { maximumFractionDigits: 0 })
@@ -65,12 +65,12 @@ function Stepper({ value, onChange, step = 0.25, min = 0 }: {
       <span className="text-xs font-mono text-t-secondary min-w-[32px] text-right">{value.toFixed(2)}</span>
       <div className="flex flex-col">
         <button type="button"
-          onClick={() => onChange(r2(value + step))}
+          onClick={() => onChange(formatValue(value + step))}
           className="h-3 w-4 flex items-center justify-center text-t-lighter hover:text-accent">
           <ChevronUp size={9} strokeWidth={2.5} />
         </button>
         <button type="button"
-          onClick={() => onChange(Math.max(min, r2(value - step)))}
+          onClick={() => onChange(Math.max(min, formatValue(value - step)))}
           className="h-3 w-4 flex items-center justify-center text-t-lighter hover:text-accent">
           <ChevronDown size={9} strokeWidth={2.5} />
         </button>
@@ -138,12 +138,12 @@ function PreviewModal({
               className="w-20 h-9 px-2.5 text-sm2 text-t-secondary bg-input border border-input-line rounded-input outline-none focus:border-accent"
             />
             <div className="flex gap-8 flex-wrap">
-              <StatPill value={fmt(r2(alloc100Day))} label="Alloc Manning 60%/Hr" />
-              <StatPill value={fmt(r2(alloc100Hr * 0.6))} label="Alloc Manning 60%/Hr" />
-              <StatPill value={fmt(r2(alloc100Day))} label="Allocated Manning 100% Target / Day" />
-              <StatPill value={fmt(r2(alloc100Hr))} label="Allocated Manning 100% Target / HR" />
-              <StatPill value={fmt(r2(alloc100Day * 0.6))} label="Allocated Manning 60% Target / Day" />
-              <StatPill value={fmt(r2(alloc100Hr * 0.6))} label="Allocated Manning 60% Target / HR" />
+              <StatPill value={fmt(formatValue(alloc100Day))} label="Alloc Manning 60%/Hr" />
+              <StatPill value={fmt(formatValue(alloc100Hr * 0.6))} label="Alloc Manning 60%/Hr" />
+              <StatPill value={fmt(formatValue(alloc100Day))} label="Allocated Manning 100% Target / Day" />
+              <StatPill value={fmt(formatValue(alloc100Hr))} label="Allocated Manning 100% Target / HR" />
+              <StatPill value={fmt(formatValue(alloc100Day * 0.6))} label="Allocated Manning 60% Target / Day" />
+              <StatPill value={fmt(formatValue(alloc100Hr * 0.6))} label="Allocated Manning 60% Target / HR" />
             </div>
           </div>
         </div>
@@ -173,12 +173,12 @@ function PreviewModal({
                   <td className="px-3 py-2 font-mono text-t-secondary">{row.seq}</td>
                   <td className="px-3 py-2 text-t-body">{row.machineTypeName}</td>
                   <td className="px-3 py-2 font-semibold text-accent">{row.operationName}</td>
-                  <td className="px-3 py-2 text-right font-mono text-t-secondary">{r2(row.sam).toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right font-semibold text-accent">{fmt(r2(row.row100Hr))}</td>
-                  <td className="px-3 py-2 text-right text-t-body">{r2(row.reqManning).toFixed(2)}</td>
+                  <td className="px-3 py-2 text-right font-mono text-t-secondary">{formatValue(row.sam).toFixed(2)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-accent">{fmt(formatValue(row.row100Hr))}</td>
+                  <td className="px-3 py-2 text-right text-t-body">{formatValue(row.reqManning).toFixed(2)}</td>
                   <td className="px-3 py-2 text-right text-t-body">0.00</td>
                   <td className="px-3 py-2 text-right text-t-body">{row.alloc.toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right font-mono text-t-secondary">{fmt(r2(row.allocManni100Hr))}</td>
+                  <td className="px-3 py-2 text-right font-mono text-t-secondary">{fmt(formatValue(row.allocManni100Hr))}</td>
                   <td className="px-2 py-2 text-t-lighter"><Trash2 size={12} /></td>
                 </tr>
               ))}
@@ -196,10 +196,10 @@ function PreviewModal({
               <span className="text-accent">{rows.length}</span> Ops
             </span>
             <span className="text-xs font-semibold text-t-body">
-              <span className="text-accent">{r2(totalSam).toFixed(2)}</span> SAM
+              <span className="text-accent">{formatValue(totalSam).toFixed(2)}</span> SAM
             </span>
             <span className="text-xs font-semibold text-t-body">
-              <span className="text-accent">{r2(allocTotal)}</span> Manning
+              <span className="text-accent">{formatValue(allocTotal)}</span> Manning
             </span>
           </div>
           <div className="flex gap-2">
@@ -334,27 +334,27 @@ export default function OperationBulletinPage() {
         operation_bulletin_data: {
           shift_hours: SHIFT_HOURS,
           working_mins: WORKING_MINS,
-          req_manning: r2(reqManningLevel),
-          allocated_manning: r2(allocTotal),
-          req_target_hun_hr: r2(line100TgtHr),
-          req_target_hun_day: r2(line100TgtDay),
-          req_target_six_day: r2(line100TgtDay * 0.6),
-          req_target_six_hr: r2(line100TgtHr * 0.6),
-          all_target_hun_day: r2(alloc100Day),
-          all_target_hun_hr: r2(alloc100Hr),
-          all_target_six_day: r2(alloc100Day * 0.6),
-          all_target_six_hr: r2(alloc100Hr * 0.6),
-          total_sam: r2(totalSam),
+          req_manning: formatValue(reqManningLevel),
+          allocated_manning: formatValue(allocTotal),
+          req_target_hun_hr: formatValue(line100TgtHr),
+          req_target_hun_day: formatValue(line100TgtDay),
+          req_target_six_day: formatValue(line100TgtDay * 0.6),
+          req_target_six_hr: formatValue(line100TgtHr * 0.6),
+          all_target_hun_day: formatValue(alloc100Day),
+          all_target_hun_hr: formatValue(alloc100Hr),
+          all_target_six_day: formatValue(alloc100Day * 0.6),
+          all_target_six_hr: formatValue(alloc100Hr * 0.6),
+          total_sam: formatValue(totalSam),
           style_id: null,
         },
         bulletin_list: computedRows.map(row => ({
           ...(row.machine_id !== null ? { machine_id: row.machine_id } : {}),
           operation_id: row.operationId,
           seq_no: row.seq,
-          target_hun_hr: r2(row.sam > 0 ? WORKING_MINS / row.sam : 0),
-          req_manning: r2(row.reqManning),
+          target_hun_hr: formatValue(row.sam > 0 ? WORKING_MINS / row.sam : 0),
+          req_manning: formatValue(row.reqManning),
           all_manning: row.alloc,
-          all_manning_target_hun_hr: r2(row.alloc * (row.sam > 0 ? WORKING_MINS / row.sam : 0)),
+          all_manning_target_hun_hr: formatValue(row.alloc * (row.sam > 0 ? WORKING_MINS / row.sam : 0)),
           order_id: null,
           sam: row.sam,
         })),
@@ -486,11 +486,11 @@ export default function OperationBulletinPage() {
                     <span className="text-xs text-t-lighter">operations</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-lg font-bold text-t-primary">{r2(totalSam).toFixed(2)}</span>
+                    <span className="text-lg font-bold text-t-primary">{formatValue(totalSam).toFixed(2)}</span>
                     <span className="text-xs text-t-lighter">Total SAM</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-lg font-bold text-t-primary">{r2(allocTotal)}</span>
+                    <span className="text-lg font-bold text-t-primary">{formatValue(allocTotal)}</span>
                     <span className="text-xs text-t-lighter">Manning</span>
                   </div>
                 </div>
@@ -546,10 +546,10 @@ export default function OperationBulletinPage() {
           <StatCard value={WORKING_MINS} label="Working Min" />
           <StatCard value={reqManningLevel} label="Req Manning" />
           <StatCard value={obRows.length} label="Operations" />
-          <StatCard value={r2(totalSam).toFixed(2)} label="Total SAM" />
-          <StatCard value={fmt(r2(line100TgtHr))} label="100% Target/Hr" />
-          <StatCard value={fmt(r2(line100TgtHr * 0.6))} label="60% Target/Hr" />
-          <StatCard value={r2(allocTotal).toFixed(2)} label="Alloc Manning" />
+          <StatCard value={formatValue(totalSam).toFixed(2)} label="Total SAM" />
+          <StatCard value={fmt(formatValue(line100TgtHr))} label="100% Target/Hr" />
+          <StatCard value={fmt(formatValue(line100TgtHr * 0.6))} label="60% Target/Hr" />
+          <StatCard value={formatValue(allocTotal).toFixed(2)} label="Alloc Manning" />
         </div>
 
         {/* ── Two-panel ── */}
@@ -630,7 +630,7 @@ export default function OperationBulletinPage() {
               <span className="text-sm font-semibold text-t-secondary">Operation Bulletin (OB)</span>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-t-lighter">
-                  Manning: <span className="font-bold text-t-primary">{r2(allocTotal).toFixed(2)}</span>
+                  Manning: <span className="font-bold text-t-primary">{formatValue(allocTotal).toFixed(2)}</span>
                 </span>
                 <Button variant="primary" size="sm" onClick={() => setShowPreview(true)} disabled={obRows.length === 0}>
                   Save to Operation Bulletin (OB)
@@ -657,10 +657,10 @@ export default function OperationBulletinPage() {
                 />
               </div>
               {/* 4 stat cells — equal width */}
-              <StatCard value={fmt(r2(line100TgtDay))}       label="100% Target / Day" />
-              <StatCard value={fmt(r2(line100TgtDay * 0.6))} label="60% Target / Day" />
-              <StatCard value={fmt(r2(alloc100Hr))}          label="Alloc Manning 100%/Hr" />
-              <StatCard value={fmt(r2(alloc100Hr * 0.6))}    label="Alloc Manning 60%/Hr" />
+              <StatCard value={fmt(formatValue(line100TgtDay))}       label="100% Target / Day" />
+              <StatCard value={fmt(formatValue(line100TgtDay * 0.6))} label="60% Target / Day" />
+              <StatCard value={fmt(formatValue(alloc100Hr))}          label="Alloc Manning 100%/Hr" />
+              <StatCard value={fmt(formatValue(alloc100Hr * 0.6))}    label="Alloc Manning 60%/Hr" />
             </div>
 
             {/* Table */}
@@ -736,12 +736,12 @@ export default function OperationBulletinPage() {
 
                         {/* 100%/Hr — auto */}
                         <td className="px-3 py-2 text-right font-semibold text-accent">
-                          {fmt(r2(row.row100Hr))}
+                          {fmt(formatValue(row.row100Hr))}
                         </td>
 
                         {/* Req Manni — auto (Excel G = D23/F) */}
                         <td className="px-3 py-2 text-right text-t-body">
-                          {r2(row.reqManning).toFixed(2)}
+                          {formatValue(row.reqManning).toFixed(2)}
                         </td>
 
                         {/* Manning — static display, not calculated */}
@@ -761,7 +761,7 @@ export default function OperationBulletinPage() {
 
                         {/* Alloc Manni 100%HR — auto (Excel I = H×F = alloc × row100Hr) */}
                         <td className="px-3 py-2 text-right font-mono text-t-secondary">
-                          {fmt(r2(row.allocManni100Hr))}
+                          {fmt(formatValue(row.allocManni100Hr))}
                         </td>
 
                         {/* Delete */}
