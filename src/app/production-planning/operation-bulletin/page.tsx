@@ -47,11 +47,11 @@ function fmt(n: number) {
 
 // Excel formulas:
 // F = 60 / SAM  (100%/Hr)
-// G = D23 / F   (Req Manning = line100TgtHr / row100Hr)
+// G = alloc100Hr / F   (Req Manning = alloc100Hr / row100Hr)
 // I = H × F     (Alloc Manni 100%HR = alloc × row100Hr)
-function calcRow(row: OBRow, line100TgtHr: number) {
+function calcRow(row: OBRow, alloc100Hr: number) {
   const row100Hr = row.sam > 0 ? 60 / row.sam : 0
-  const reqManning = row100Hr > 0 ? line100TgtHr / row100Hr : 0
+  const reqManning = row100Hr > 0 ? alloc100Hr / row100Hr : 0
   const allocManni100Hr = row.alloc * row100Hr
   return { row100Hr, reqManning, allocManni100Hr }
 }
@@ -217,7 +217,6 @@ function PreviewModal({
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function OperationBulletinPage() {
   const [obRows, setObRows] = useState<OBRow[]>([])
-  const [reqManningLevel, setReqManningLevel] = useState(18)  // Excel B24 — drives D23 & G column
   const [allocManning, setAllocManning] = useState(0)        // Excel H default — drives Alloc column only
   const [leftOps, setLeftOps] = useState<LeftOp[]>([])
   const [leftSearch, setLeftSearch] = useState('')
@@ -241,15 +240,17 @@ export default function OperationBulletinPage() {
   const totalSam = obRows.reduce((s, r) => s + r.sam, 0)
   const allocTotal = obRows.reduce((s, r) => s + r.alloc, 0) // sum of per-row alloc (Excel B25)
 
-  // D23 in Excel = B24×60/totalSam — uses reqManningLevel (B24), NOT allocManning
-  const line100TgtHr = totalSam > 0 ? reqManningLevel * 60 / totalSam : 0
-  const line100TgtDay = totalSam > 0 ? reqManningLevel * WORKING_MINS / totalSam : 0
-
   // Alloc-based targets (using sum of per-row alloc = Excel B25)
   const alloc100Hr = totalSam > 0 ? allocTotal * 60 / totalSam : 0
   const alloc100Day = totalSam > 0 ? allocTotal * WORKING_MINS / totalSam : 0
 
-  const computedRows = obRows.map(r => ({ ...r, ...calcRow(r, line100TgtHr) }))
+  // Per-row req manning uses alloc100Hr as the line target
+  const computedRows = obRows.map(r => ({ ...r, ...calcRow(r, alloc100Hr) }))
+
+  // Header Req Manning = sum of per-row req manning; line targets derived from it
+  const totalReqManning = computedRows.reduce((s, r) => s + r.reqManning, 0)
+  const line100TgtHr = totalSam > 0 ? totalReqManning * 60 / totalSam : 0
+  const line100TgtDay = totalSam > 0 ? totalReqManning * WORKING_MINS / totalSam : 0
 
   // ── Fetch left ops ────────────────────────────────────────────────────────────
   const fetchOps = useCallback(async () => {
@@ -334,7 +335,7 @@ export default function OperationBulletinPage() {
         operation_bulletin_data: {
           shift_hours: SHIFT_HOURS,
           working_mins: WORKING_MINS,
-          req_manning: formatValue(reqManningLevel),
+          req_manning: formatValue(totalReqManning),
           allocated_manning: formatValue(allocTotal),
           req_target_hun_hr: formatValue(line100TgtHr),
           req_target_hun_day: formatValue(line100TgtDay),
@@ -544,7 +545,7 @@ export default function OperationBulletinPage() {
         <div className="flex border-b border-table-line shrink-0 bg-table-head">
           <StatCard value={`${SHIFT_HOURS} hrs`} label="Shift Hrs" />
           <StatCard value={WORKING_MINS} label="Working Min" />
-          <StatCard value={reqManningLevel} label="Req Manning" />
+          <StatCard value={formatValue(totalReqManning).toFixed(2)} label="Req Manning" />
           <StatCard value={obRows.length} label="Operations" />
           <StatCard value={formatValue(totalSam).toFixed(2)} label="Total SAM" />
           <StatCard value={fmt(formatValue(line100TgtHr))} label="100% Target/Hr" />
