@@ -224,30 +224,25 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
                 </button>
               </div>
             ) : (
-              <div className="flex gap-1">
-                <div className="relative flex-1">
-                  <select
-                    value={form.colour}
-                    onChange={e => {
-                      setField('colour', e.target.value)
-                      if (touched.colour) setErrors(er => ({ ...er, colour: e.target.value ? '' : 'Colour is required' }))
-                    }}
-                    onBlur={() => handleBlur('colour')}
-                    className={`${INPUT_CLS} appearance-none pr-7 ${errors.colour && touched.colour ? 'border-red-500' : ''}`}
-                  >
-                    <option value="">Select colour...</option>
-                    {colours.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-t-lighter text-xs">▾</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAddingColour(true)}
-                  title="Add new colour"
-                  className="h-input-h px-2.5 border border-input-line rounded-input text-t-lighter hover:text-accent hover:border-accent transition-colors shrink-0 text-sm font-bold"
+              <div className="relative">
+                <select
+                  value={form.colour}
+                  onChange={e => {
+                    if (e.target.value === '__add_new__') {
+                      setAddingColour(true)
+                      return
+                    }
+                    setField('colour', e.target.value)
+                    if (touched.colour) setErrors(er => ({ ...er, colour: e.target.value ? '' : 'Colour is required' }))
+                  }}
+                  onBlur={() => handleBlur('colour')}
+                  className={`${INPUT_CLS} appearance-none pr-7 ${errors.colour && touched.colour ? 'border-red-500' : ''}`}
                 >
-                  <Plus size={13} />
-                </button>
+                  <option value="">Select colour...</option>
+                  {colours.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="__add_new__">+ Create new colour</option>
+                </select>
+                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-t-lighter text-xs">▾</span>
               </div>
             )}
             {errors.colour && touched.colour && (
