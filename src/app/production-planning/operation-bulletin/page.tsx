@@ -42,7 +42,7 @@ interface OBRow {
 function formatValue(val: number) { return parseFloat(Number(val).toFixed(2)) }
 function fmt(n: number) {
   if (!isFinite(n) || n === 0) return '0'
-  return n.toLocaleString('en-IN', { maximumFractionDigits: 0 })
+  return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 // Excel formulas:
