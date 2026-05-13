@@ -50,9 +50,9 @@ function fmt(n: number) {
 // G = alloc100Hr / F   (Req Manning = alloc100Hr / row100Hr)
 // I = H × F     (Alloc Manni 100%HR = alloc × row100Hr)
 function calcRow(row: OBRow, alloc100Hr: number) {
-  const row100Hr = row.sam > 0 ? 60 / row.sam : 0
-  const reqManning = row100Hr > 0 ? alloc100Hr / row100Hr : 0
-  const allocManni100Hr = row.alloc * row100Hr
+  const row100Hr = row.sam > 0 ? formatValue(60 / row.sam) : 0
+  const reqManning = row100Hr > 0 ? formatValue(alloc100Hr / row100Hr) : 0
+  const allocManni100Hr = formatValue(row.alloc * row100Hr)
   return { row100Hr, reqManning, allocManni100Hr }
 }
 
