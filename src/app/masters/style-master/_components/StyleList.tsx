@@ -5,7 +5,7 @@ import Badge from '@/components/ui/Badge'
 import DataTable from '@/components/ui/DataTable'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
-import { Pencil, Trash2, Eye, Download, ChevronDown } from 'lucide-react'
+import { Pencil, Trash2, Eye, Download, ChevronDown, Plus } from 'lucide-react'
 import { Search } from 'lucide-react'
 import type { Style } from './types'
 
@@ -117,13 +117,6 @@ export default function StyleList({
 
   return (
     <>
-      {/* Info banner */}
-      <div className="mx-5 mt-4 mb-1 px-4 py-2.5 rounded-lg" style={{ background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.35)' }}>
-        <p className="text-xs font-medium" style={{ color: '#c2410c' }}>
-          Styles are auto-created when you save an Operation Bulletin (OB). Click &ldquo;Add from OBS&rdquo; to open the OB editor and save a new style.
-        </p>
-      </div>
-
       {/* Toolbar */}
       <div className="flex items-center gap-2.5 px-5 py-3 flex-wrap">
         {/* Search */}
@@ -175,6 +168,10 @@ export default function StyleList({
           <Download size={13} /> Export <ChevronDown size={11} />
         </button>
 
+        {/* Add */}
+        <Button onClick={onAdd} variant="primary" className="h-8 px-3 flex items-center gap-1.5 text-sm2">
+          <Plus size={13} /> Add Style
+        </Button>
       </div>
 
       <DataTable<Style>
