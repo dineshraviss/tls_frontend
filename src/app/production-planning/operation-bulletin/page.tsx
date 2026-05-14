@@ -128,23 +128,13 @@ function PreviewModal({
 
         {/* Stats */}
         <div className="px-6 py-4 border-b border-table-line shrink-0">
-          <p className="text-xs font-medium text-t-body mb-3">Allocated manning</p>
-          <div className="flex items-start gap-8 flex-wrap">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={allocManning}
-              onChange={e => { const v = e.target.value.replace(/\D/g, ''); onAllocChange(v === '' ? 0 : parseInt(v, 10)) }}
-              className="w-20 h-9 px-2.5 text-sm2 text-t-secondary bg-input border border-input-line rounded-input outline-none focus:border-accent"
-            />
-            <div className="flex gap-8 flex-wrap">
-              <StatPill value={fmt(formatValue(alloc100Day))} label="Alloc Manning 60%/Hr" />
-              <StatPill value={fmt(formatValue(alloc100Hr * 0.6))} label="Alloc Manning 60%/Hr" />
-              <StatPill value={fmt(formatValue(alloc100Day))} label="Allocated Manning 100% Target / Day" />
-              <StatPill value={fmt(formatValue(alloc100Hr))} label="Allocated Manning 100% Target / HR" />
-              <StatPill value={fmt(formatValue(alloc100Day * 0.6))} label="Allocated Manning 60% Target / Day" />
-              <StatPill value={fmt(formatValue(alloc100Hr * 0.6))} label="Allocated Manning 60% Target / HR" />
-            </div>
+          <div className="flex gap-8 flex-wrap">
+            <StatPill value={fmt(formatValue(alloc100Day))} label="Alloc Manning 60%/Hr" />
+            <StatPill value={fmt(formatValue(alloc100Hr * 0.6))} label="Alloc Manning 60%/Hr" />
+            <StatPill value={fmt(formatValue(alloc100Day))} label="Allocated Manning 100% Target / Day" />
+            <StatPill value={fmt(formatValue(alloc100Hr))} label="Allocated Manning 100% Target / HR" />
+            <StatPill value={fmt(formatValue(alloc100Day * 0.6))} label="Allocated Manning 60% Target / Day" />
+            <StatPill value={fmt(formatValue(alloc100Hr * 0.6))} label="Allocated Manning 60% Target / HR" />
           </div>
         </div>
 
