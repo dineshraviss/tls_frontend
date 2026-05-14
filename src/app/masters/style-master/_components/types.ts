@@ -29,12 +29,13 @@ export interface OBOption {
   created_at?: string
 }
 
-export type FormField = 'buyer' | 'style_name' | 'operation_bulletin_id'
+export type FormField = 'buyer' | 'style_name' | 'style_no' | 'operation_bulletin_id'
 export type FormErrors = Partial<Record<FormField, string>>
 export type Touched   = Partial<Record<FormField, boolean>>
 
 export const rules: ValidationRules<FormField> = {
   buyer:      { required: 'Buyer is required' },
   style_name: { required: 'Style name is required', minLength: { value: 2, message: 'Minimum 2 characters' } },
-  operation_bulletin_id: { required: 'Operation Bulletin is required' },
+  style_no:   {},
+  operation_bulletin_id: {},
 }

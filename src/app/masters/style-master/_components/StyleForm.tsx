@@ -19,26 +19,25 @@ interface Props {
 }
 
 export default function StyleForm({ editStyle, saving, formError, onSave, onClose }: Props) {
-  const [form, setForm] = useState({ buyer: '', style_name: '', operation_bulletin_id: '' })
+  const isEdit = !!editStyle
+  const [form, setForm] = useState({ buyer: '', style_name: '', style_no: '', operation_bulletin_id: '' })
   const [errors, setErrors]   = useState<FormErrors>({})
   const [touched, setTouched] = useState<Touched>({})
   const [obList, setObList]     = useState<OBOption[]>([])
   const [obLoading, setObLoading] = useState(true)
 
-  // Fetch OB list for dropdown
   useEffect(() => {
     setObLoading(true)
     apiCall<Record<string, unknown>>(
       '/operationbullatin/list',
       { method: 'GET', encrypt: false, payload: { page: '1', per_page: '500', search: '' } }
     ).then(res => {
-      // Handle multiple possible response shapes
       const d = res.data as Record<string, unknown> | undefined
       const list =
-        Array.isArray(res.data) ? (res.data as OBOption[]) :
-        Array.isArray(d?.operation_bulletins) ? (d.operation_bulletins as OBOption[]) :
-        Array.isArray(d?.bulletins)           ? (d.bulletins as OBOption[]) :
-        Array.isArray(d?.data)                ? (d.data as OBOption[]) :
+        Array.isArray(res.data)                ? (res.data as OBOption[]) :
+        Array.isArray(d?.operation_bulletins)  ? (d.operation_bulletins as OBOption[]) :
+        Array.isArray(d?.bulletins)            ? (d.bulletins as OBOption[]) :
+        Array.isArray(d?.data)                 ? (d.data as OBOption[]) :
         []
       setObList(list)
     }).catch(() => setObList([]))
@@ -50,10 +49,11 @@ export default function StyleForm({ editStyle, saving, formError, onSave, onClos
       setForm({
         buyer: editStyle.buyer ?? '',
         style_name: editStyle.style_name ?? '',
+        style_no: editStyle.style_no ?? '',
         operation_bulletin_id: editStyle.operation_bulletin_id ? String(editStyle.operation_bulletin_id) : '',
       })
     } else {
-      setForm({ buyer: '', style_name: '', operation_bulletin_id: '' })
+      setForm({ buyer: '', style_name: '', style_no: '', operation_bulletin_id: '' })
     }
     setErrors({})
     setTouched({})
@@ -71,8 +71,8 @@ export default function StyleForm({ editStyle, saving, formError, onSave, onClos
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setTouched({ buyer: true, style_name: true, operation_bulletin_id: true })
-    const allErrors = validateAll(form, rules)
+    setTouched({ buyer: true, style_name: true })
+    const allErrors = validateAll({ buyer: form.buyer, style_name: form.style_name }, { buyer: rules.buyer, style_name: rules.style_name })
     setErrors(allErrors)
     if (hasErrors(allErrors)) return
 
@@ -81,9 +81,9 @@ export default function StyleForm({ editStyle, saving, formError, onSave, onClos
       style_name: form.style_name,
       operation_bulletin_id: form.operation_bulletin_id,
     }
-    if (editStyle) {
+    if (isEdit) {
       payload.uuid = editStyle.uuid
-      if (editStyle.style_no) payload.style_no = editStyle.style_no
+      payload.style_no = form.style_no
     }
     onSave(payload)
   }
@@ -95,53 +95,63 @@ export default function StyleForm({ editStyle, saving, formError, onSave, onClos
       : `OB #${ob.id}`,
   }))
 
-  const footer = (
-    <>
-      <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
-      <Button variant="primary" type="submit" form="style-form" isLoading={saving}>
-        {editStyle ? 'Update Style' : 'Add Style'}
-      </Button>
-    </>
-  )
-
   return (
-    <Modal title={editStyle ? 'Edit Style' : 'Add OB Style'} onClose={onClose} footer={footer}>
+    <Modal
+      title={isEdit ? 'Edit Style' : 'Add Style'}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" type="submit" form="style-form" isLoading={saving}>
+            {isEdit ? 'Update Style' : 'Add Style'}
+          </Button>
+        </>
+      }
+    >
       {formError && (
         <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
           {formError}
         </div>
       )}
       <form id="style-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <FormInput
-          label="Buyer"
-          value={form.buyer}
-          onChange={e => set('buyer', e.target.value)}
-          onBlur={() => handleBlur('buyer')}
-          placeholder="Enter buyer name"
-          error={errors.buyer}
-          touched={touched.buyer}
-          required
-        />
-        <FormInput
-          label="Style Name"
-          value={form.style_name}
-          onChange={e => set('style_name', e.target.value)}
-          onBlur={() => handleBlur('style_name')}
-          placeholder="Enter style name"
-          error={errors.style_name}
-          touched={touched.style_name}
-          required
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <FormInput
+            label="Buyer"
+            value={form.buyer}
+            onChange={e => set('buyer', e.target.value)}
+            onBlur={() => handleBlur('buyer')}
+            placeholder="Enter buyer name"
+            error={errors.buyer}
+            touched={touched.buyer}
+            required
+          />
+          <FormInput
+            label="Style Name"
+            value={form.style_name}
+            onChange={e => set('style_name', e.target.value)}
+            onBlur={() => handleBlur('style_name')}
+            placeholder="Enter style name"
+            error={errors.style_name}
+            touched={touched.style_name}
+            required
+          />
+        </div>
+        {isEdit && (
+          <FormInput
+            label="Style No."
+            value={form.style_no}
+            onChange={e => set('style_no', e.target.value)}
+            onBlur={() => handleBlur('style_no')}
+            placeholder="e.g. ST0004"
+          />
+        )}
         <FormSelect
           label="Operation Bulletin"
           value={form.operation_bulletin_id}
           onChange={e => set('operation_bulletin_id', e.target.value)}
           onBlur={() => handleBlur('operation_bulletin_id')}
           options={obOptions}
-          placeholder={obLoading ? 'Loading...' : obList.length === 0 ? 'No bulletins found' : 'Select operation bulletin'}
-          error={errors.operation_bulletin_id}
-          touched={touched.operation_bulletin_id}
-          required
+          placeholder={obLoading ? 'Loading...' : obList.length === 0 ? 'No bulletins found' : 'Select operation bulletin (optional)'}
         />
       </form>
     </Modal>
