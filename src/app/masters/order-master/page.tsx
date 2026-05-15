@@ -33,7 +33,7 @@ export default function OrderMasterPage() {
   const [linkOrders, setLinkOrders] = useState<LinkOrder[]>([])
   const [linkLoading, setLinkLoading] = useState(true)
   const [linkSearch, setLinkSearch] = useState('')
-  const [linkStatus, setLinkStatus] = useState('unlinked')
+  const [linkStatus, setLinkStatus] = useState('all')
   const [linkPage, setLinkPage] = useState(1)
   const [linkPerPage, setLinkPerPage] = useState(PER_PAGE)
   const [linkTotalPages, setLinkTotalPages] = useState(1)
@@ -94,7 +94,6 @@ export default function OrderMasterPage() {
           per_page: linkPerPage,
           status: linkStatus,
           search: linkSearch,
-          colour: '',
         },
       })
       setLinkOrders(res.data?.records ?? [])
