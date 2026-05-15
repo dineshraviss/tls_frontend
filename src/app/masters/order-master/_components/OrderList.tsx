@@ -70,7 +70,7 @@ export default function OrderList({
       header: 'Order Qty',
       className: 'text-right',
       render: (row: Order) => (
-        <span className="font-mono text-xs text-t-secondary">{(row.order_qty ?? 0).toLocaleString()}</span>
+        <span className="font-mono text-xs text-t-secondary">{row.order_qty.toLocaleString()}</span>
       ),
     },
     {
@@ -78,7 +78,7 @@ export default function OrderList({
       header: 'Prod Qty',
       className: 'text-right',
       render: (row: Order) => (
-        <span className="font-mono text-xs text-t-secondary">{(row.prod_qty ?? 0).toLocaleString()}</span>
+        <span className="font-mono text-xs text-t-secondary">{row.prod_qty.toLocaleString()}</span>
       ),
     },
     {
@@ -86,7 +86,7 @@ export default function OrderList({
       header: 'Input Qty',
       className: 'text-right',
       render: (row: Order) => (
-        <span className="font-mono text-xs text-t-secondary">{(row.input_qty ?? 0).toLocaleString()}</span>
+        <span className="font-mono text-xs text-t-secondary">{row.input_qty.toLocaleString()}</span>
       ),
     },
     {
@@ -94,8 +94,8 @@ export default function OrderList({
       header: 'Rej Qty',
       className: 'text-right',
       render: (row: Order) => (
-        <span className={`font-mono text-xs font-semibold ${(row.rej_qty ?? 0) > 0 ? 'text-red-500' : 'text-t-secondary'}`}>
-          {(row.rej_qty ?? 0).toLocaleString()}
+        <span className={`font-mono text-xs font-semibold ${row.rej_qty > 0 ? 'text-red-500' : 'text-t-secondary'}`}>
+          {row.rej_qty.toLocaleString()}
         </span>
       ),
     },
@@ -103,14 +103,14 @@ export default function OrderList({
       key: 'rej_per',
       header: 'Rej %',
       className: 'text-right',
-      render: (row: Order) => <span className="font-mono text-xs text-t-secondary">{row.rej_per ?? 0}%</span>,
+      render: (row: Order) => <span className="font-mono text-xs text-t-secondary">{row.rej_per}%</span>,
     },
     {
       key: 'output_qty',
       header: 'Output Qty',
       className: 'text-right',
       render: (row: Order) => (
-        <span className="font-mono text-xs text-t-secondary">{(row.output_qty ?? 0).toLocaleString()}</span>
+        <span className="font-mono text-xs text-t-secondary">{row.output_qty.toLocaleString()}</span>
       ),
     },
     {
@@ -118,7 +118,7 @@ export default function OrderList({
       header: 'WIP',
       className: 'text-right',
       render: (row: Order) => (
-        <span className="font-mono text-xs text-t-secondary">{(row.wip ?? 0).toLocaleString()}</span>
+        <span className="font-mono text-xs text-t-secondary">{row.wip.toLocaleString()}</span>
       ),
     },
     {
@@ -126,14 +126,14 @@ export default function OrderList({
       header: 'Rework',
       className: 'text-right',
       render: (row: Order) => (
-        <span className="font-mono text-xs text-t-secondary">{(row.rework_qty ?? 0).toLocaleString()}</span>
+        <span className="font-mono text-xs text-t-secondary">{row.rework_qty.toLocaleString()}</span>
       ),
     },
     {
       key: 'rework_per',
       header: 'RW%',
       className: 'text-right',
-      render: (row: Order) => <span className="font-mono text-xs text-t-secondary">{row.rework_per ?? 0}%</span>,
+      render: (row: Order) => <span className="font-mono text-xs text-t-secondary">{row.rework_per}%</span>,
     },
     {
       key: 'is_active',
