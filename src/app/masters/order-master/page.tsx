@@ -33,7 +33,6 @@ export default function OrderMasterPage() {
   const [linkOrders, setLinkOrders] = useState<LinkOrder[]>([])
   const [linkLoading, setLinkLoading] = useState(true)
   const [linkSearch, setLinkSearch] = useState('')
-  const [linkStatus, setLinkStatus] = useState('unlinked')
   const [linkPage, setLinkPage] = useState(1)
   const [linkPerPage, setLinkPerPage] = useState(PER_PAGE)
   const [linkTotalPages, setLinkTotalPages] = useState(1)
@@ -54,13 +53,13 @@ export default function OrderMasterPage() {
 
   const uniqueColours = [...new Set(orders.map(o => o.colour).filter(Boolean))]
 
-  // ── Fetch orders ───────────────────────────────────────────────────────────────
+  // ── Fetch in-process orders (/order/linkorderlist = linked orders) ─────────────
   const fetchOrders = useCallback(async () => {
     setOrdersLoading(true)
     try {
       const res = await apiCall<{
         data?: { records?: Order[]; pagination?: { total: number; total_pages: number } }
-      }>('/order/list', {
+      }>('/order/linkorderlist', {
         method: 'GET',
         encrypt: false,
         payload: {
@@ -68,8 +67,6 @@ export default function OrderMasterPage() {
           per_page: ordersPerPage,
           status: orderStatus,
           colour: orderColour,
-          order_no: 'all',
-          style_id: 'all',
           ...(orderSearch ? { search: orderSearch } : {}),
         },
       })
@@ -80,21 +77,19 @@ export default function OrderMasterPage() {
     finally { setOrdersLoading(false) }
   }, [ordersPage, ordersPerPage, orderStatus, orderColour, orderSearch])
 
-  // ── Fetch link orders ──────────────────────────────────────────────────────────
+  // ── Fetch unlinked orders (/order/unlinkorderlist) ─────────────────────────────
   const fetchLinkOrders = useCallback(async () => {
     setLinkLoading(true)
     try {
       const res = await apiCall<{
         data?: { records?: LinkOrder[]; pagination?: { total: number; total_pages: number } }
-      }>('/order/linkorderlist', {
+      }>('/order/unlinkorderlist', {
         method: 'GET',
         encrypt: false,
         payload: {
           page: linkPage,
           per_page: linkPerPage,
-          status: linkStatus,
-          search: linkSearch,
-          colour: '',
+          ...(linkSearch ? { search: linkSearch } : {}),
         },
       })
       setLinkOrders(res.data?.records ?? [])
@@ -102,18 +97,18 @@ export default function OrderMasterPage() {
       setLinkTotalPages(res.data?.pagination?.total_pages ?? 1)
     } catch { setLinkOrders([]) }
     finally { setLinkLoading(false) }
-  }, [linkPage, linkPerPage, linkStatus, linkSearch])
+  }, [linkPage, linkPerPage, linkSearch])
 
   // ── Stats on mount ─────────────────────────────────────────────────────────────
   useEffect(() => {
     apiCall<{ data?: { pagination?: { total: number } } }>(
-      '/order/list',
-      { method: 'GET', encrypt: false, payload: { page: 1, per_page: 1, status: 'all', colour: 'all', order_no: 'all', style_id: 'all' } }
+      '/order/linkorderlist',
+      { method: 'GET', encrypt: false, payload: { page: 1, per_page: 1 } }
     ).then(res => setStatTotal(res.data?.pagination?.total ?? 0)).catch(() => {})
 
     apiCall<{ data?: { pagination?: { total: number } } }>(
-      '/order/linkorderlist',
-      { method: 'GET', encrypt: false, payload: { page: 1, per_page: 1, status: 'unlinked', search: '' } }
+      '/order/unlinkorderlist',
+      { method: 'GET', encrypt: false, payload: { page: 1, per_page: 1 } }
     ).then(res => setStatUnlinked(res.data?.pagination?.total ?? 0)).catch(() => {})
   }, [])
 
@@ -170,7 +165,7 @@ export default function OrderMasterPage() {
     finally { setViewLoading(false) }
   }
 
-  const statInProcess = Math.max(0, statTotal - statUnlinked)
+  const statInProcess = statTotal
 
   return (
     <AppLayout>
@@ -275,13 +270,11 @@ export default function OrderMasterPage() {
           data={linkOrders}
           loading={linkLoading}
           search={linkSearch}
-          status={linkStatus}
           page={linkPage}
           perPage={linkPerPage}
           totalPages={linkTotalPages}
           totalCount={linkTotalCount}
           onSearchChange={v => { setLinkSearch(v); setLinkPage(1) }}
-          onStatusChange={v => { setLinkStatus(v); setLinkPage(1) }}
           onView={handleView}
           onDelete={setDeleteTarget}
           onPageChange={setLinkPage}
