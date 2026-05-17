@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { apiCall } from '@/services/apiClient'
@@ -112,7 +112,7 @@ export default function ShiftMasterForm({ shift, branches, allZones, onClose, on
       }
     >
       {formError && (
-        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+        <div className="mb-3 px-3 py-2 border border-red-300 rounded-input text-xs text-red-600">
           {formError}
         </div>
       )}

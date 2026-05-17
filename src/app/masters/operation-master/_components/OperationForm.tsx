@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Modal from '@/components/ui/Modal'
@@ -244,7 +244,7 @@ export default function OperationForm({
       }
     >
       {formError && (
-        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+        <div className="mb-3 px-3 py-2 border border-red-300 rounded-input text-xs text-red-600">
           {formError}
         </div>
       )}

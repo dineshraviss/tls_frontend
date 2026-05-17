@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
@@ -429,7 +429,7 @@ export default function OperationBulletinPage() {
             {/* Body */}
             <div className="px-5 py-4 flex flex-col gap-3">
               {styleError && (
-                <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+                <div className="px-3 py-2 border border-red-300 rounded-input text-xs text-red-600">
                   {styleError}
                 </div>
               )}

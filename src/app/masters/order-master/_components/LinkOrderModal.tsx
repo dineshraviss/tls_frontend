@@ -77,6 +77,13 @@ export default function LinkOrderModal({ row, onClose, onSuccess }: Props) {
         {/* Body */}
         <form id="link-order-form" onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
 
+          {/* Server / validation error banner */}
+          {error && (
+            <div className="px-3 py-2 border border-red-300 rounded-input text-xs text-red-600 dark:border-red-900/40 dark:text-red-400">
+              {error}
+            </div>
+          )}
+
           {/* Order Number — read-only pre-filled */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-t-body">Order Number</label>
@@ -119,7 +126,6 @@ export default function LinkOrderModal({ row, onClose, onSuccess }: Props) {
               </select>
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-t-lighter text-xs">▾</span>
             </div>
-            {error && <span className="text-xs text-red-500">{error}</span>}
           </div>
         </form>
 
