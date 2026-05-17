@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Eye, MoreVertical, Search } from 'lucide-react'
+import { Trash2, Eye, MoreVertical, Search, Link2 } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import DataTable from '@/components/ui/DataTable'
 import type { LinkOrder } from './types'
@@ -16,6 +16,7 @@ interface OrderLinkListProps {
   totalPages: number
   totalCount: number
   onSearchChange: (v: string) => void
+  onLink: (row: LinkOrder) => void
   onView: (uuid: string) => void
   onDelete: (row: LinkOrder) => void
   onPageChange: (p: number) => void
@@ -24,7 +25,7 @@ interface OrderLinkListProps {
 
 export default function OrderLinkList({
   data, loading, search, page, perPage, totalPages, totalCount,
-  onSearchChange, onView, onDelete, onPageChange, onPerPageChange,
+  onSearchChange, onLink, onView, onDelete, onPageChange, onPerPageChange,
 }: OrderLinkListProps) {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
@@ -75,6 +76,18 @@ export default function OrderLinkList({
         <Badge variant={row.style_id ? 'success' : 'warning'}>
           {row.style_id ? 'Linked' : 'Unlinked'}
         </Badge>
+      ),
+    },
+    {
+      key: 'link_action',
+      header: '',
+      render: (row: LinkOrder) => (
+        <button
+          onClick={() => onLink(row)}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-accent border border-accent/40 rounded hover:bg-accent/5 transition-colors whitespace-nowrap"
+        >
+          <Link2 size={11} /> Link
+        </button>
       ),
     },
     {

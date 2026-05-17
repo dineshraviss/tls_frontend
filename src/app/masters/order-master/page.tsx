@@ -12,6 +12,7 @@ import OrderList from './_components/OrderList'
 import OrderLinkList from './_components/OrderLinkList'
 import OrderForm from './_components/OrderForm'
 import OrderView from './_components/OrderView'
+import LinkOrderModal from './_components/LinkOrderModal'
 
 type Tab = 'in-process' | 'unlinked'
 
@@ -49,6 +50,7 @@ export default function OrderMasterPage() {
   const [deleting, setDeleting] = useState(false)
   const [viewData, setViewData] = useState<Record<string, unknown> | null>(null)
   const [viewLoading, setViewLoading] = useState(false)
+  const [linkTarget, setLinkTarget] = useState<LinkOrder | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
 
   const uniqueColours = [...new Set(orders.map(o => o.colour).filter(Boolean))]
@@ -185,6 +187,18 @@ export default function OrderMasterPage() {
         onClose={() => setViewData(null)}
       />
 
+      {linkTarget && (
+        <LinkOrderModal
+          row={linkTarget}
+          onClose={() => setLinkTarget(null)}
+          onSuccess={() => {
+            setToast({ message: 'Order linked successfully', type: 'success' })
+            fetchOrders()
+            fetchLinkOrders()
+          }}
+        />
+      )}
+
       {deleteTarget && (
         <ConfirmDialog
           title="Delete Order"
@@ -275,6 +289,7 @@ export default function OrderMasterPage() {
           totalPages={linkTotalPages}
           totalCount={linkTotalCount}
           onSearchChange={v => { setLinkSearch(v); setLinkPage(1) }}
+          onLink={setLinkTarget}
           onView={handleView}
           onDelete={setDeleteTarget}
           onPageChange={setLinkPage}
