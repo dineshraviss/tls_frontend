@@ -37,11 +37,12 @@ export default function LineForm({
   const [zoneId, setZoneId] = useState(line?.zone_id?.toString() ?? '')
   const [lineName, setLineName] = useState(line?.line_name ?? '')
   const [slots, setSlots] = useState<FormSlot[]>(
-    line?.slots?.map(s => ({
+    line?.slots?.map((s, i) => ({
       slot_name: s.slot_name,
       start_time: s.start?.slice(0, 5) || '',
       end_time: s.end?.slice(0, 5) || '',
-    })) ?? [{ slot_name: '', start_time: '', end_time: '' }]
+      _key: s.id?.toString() ?? `slot-${i}`,
+    })) ?? [{ slot_name: '', start_time: '', end_time: '', _key: 'slot-0' }]
   )
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -73,6 +74,7 @@ export default function LineForm({
         slot_name: `Slot ${i + 1}`,
         start_time: '',
         end_time: '',
+        _key: `slot-${Date.now()}-${i}`,
       }))
     )
   }
@@ -219,7 +221,7 @@ export default function LineForm({
             )}
             <div className="flex flex-col gap-3">
               {slots.map((slot, i) => (
-                <div key={i}>
+                <div key={slot._key ?? `slot-${i}`}>
                   <FormInput
                     label={`Slot ${i + 1} Name`}
                     placeholder="e.g. Morning"

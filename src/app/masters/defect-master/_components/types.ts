@@ -6,6 +6,7 @@ export interface Cap {
   cap_name: string
   short_name: string
   notes: string
+  _key?: string
 }
 
 export interface Defect {

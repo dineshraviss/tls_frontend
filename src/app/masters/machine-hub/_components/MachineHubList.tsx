@@ -205,10 +205,10 @@ export default function MachineHubList({
                     <table className="w-full border-collapse text-sm2">
                       <thead>
                         <tr className="bg-table-head">
-                          {['M - No.', 'Brand', 'Model No', 'Serial No', 'Condition', 'Next Maint.', 'Branch', 'Status', ''].map(
-                            (h, i) => (
+                          {['M - No.', 'Brand', 'Model No', 'Serial No', 'Condition', 'Next Maint.', 'Branch', 'Status', 'action'].map(
+                            (h) => (
                               <th
-                                key={i}
+                                key={h}
                                 className="px-3.5 py-2.5 text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap"
                               >
                                 {h}
