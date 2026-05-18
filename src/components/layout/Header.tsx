@@ -125,7 +125,7 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
           </button>
         )}
         <div className="flex items-center gap-1.5">
-          {getBreadcrumbs(pathname).map((crumb) => (
+          {getBreadcrumbs(pathname).map((crumb, i) => (
             <span key={crumb.text} className="flex items-center gap-1.5">
               {i > 0 && <span className="text-xs text-t-lighter">&rsaquo;</span>}
               <span className={`${isMobile ? 'text-sm' : 'text-md'} ${crumb.active ? 'font-bold text-t-primary' : 'font-normal text-t-lighter'}`}>
