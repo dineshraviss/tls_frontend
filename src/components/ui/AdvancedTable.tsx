@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { ArrowUpDown, MoreVertical } from 'lucide-react'
 import Pagination from './Pagination'
 import { PER_PAGE } from '@/lib/constants'
@@ -10,6 +10,7 @@ export interface AdvancedColumn<T> {
   key: string
   header: string
   sortable?: boolean
+  sortValue?: (row: T) => string | number
   render: (row: T, index: number) => React.ReactNode
   className?: string
 }
@@ -77,6 +78,18 @@ export default function AdvancedTable<T>({
     onSort?.(key, newDir)
   }
 
+  const sortedData = useMemo(() => {
+    if (!sortKey) return data
+    const col = columns.find(c => c.key === sortKey)
+    return [...data].sort((a, b) => {
+      const av = col?.sortValue ? col.sortValue(a) : ((a as Record<string, unknown>)[sortKey] ?? '')
+      const bv = col?.sortValue ? col.sortValue(b) : ((b as Record<string, unknown>)[sortKey] ?? '')
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [data, sortKey, sortDir, columns])
+
   return (
     <div className="bg-card rounded-card shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden border border-header-line">
       <div className="overflow-x-auto">
@@ -129,10 +142,10 @@ export default function AdvancedTable<T>({
           <tbody>
             {loading ? (
               <tr><td colSpan={totalCols} className="p-8 text-center text-t-lighter text-sm">Loading...</td></tr>
-            ) : data.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <tr><td colSpan={totalCols} className="p-8 text-center text-t-lighter text-sm">{emptyMessage}</td></tr>
             ) : (
-              data.map((row, i) => {
+              sortedData.map((row, i) => {
                 const key = rowKey(row)
                 const isChecked = selected.includes(key)
                 return (
@@ -194,7 +207,7 @@ export default function AdvancedTable<T>({
 
       {/* Fixed-position action dropdown — escapes overflow:hidden */}
       {openMenu !== null && actions && (() => {
-        const row = data.find(r => rowKey(r) === openMenu)
+        const row = sortedData.find(r => rowKey(r) === openMenu)
         if (!row) return null
         const items = actions(row)
         return (
