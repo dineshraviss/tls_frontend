@@ -106,7 +106,7 @@ export default function ShiftModifyForm({ shift, branches, allZones, onClose, on
       footer={
         <>
           <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" type="submit" form="shift-form" isLoading={saving}>
+          <Button variant="primary" type="submit" form="shift-modify-form" isLoading={saving}>
             {isEdit ? 'Update Shift' : 'Add Shift Modify'}
           </Button>
         </>
@@ -117,7 +117,7 @@ export default function ShiftModifyForm({ shift, branches, allZones, onClose, on
           {formError}
         </div>
       )}
-      <form id="shift-form" onSubmit={handleSubmit}>
+      <form id="shift-modify-form" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-0">
           {/* ── Left Column ── */}
           <div className="flex flex-col gap-3">

@@ -1,6 +1,4 @@
-'use client'
-
-interface BreadcrumbItem {
+﻿interface BreadcrumbItem {
   label: string
   active?: boolean
 }

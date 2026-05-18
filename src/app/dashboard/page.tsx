@@ -124,7 +124,7 @@ export default function DashboardPage() {
                     </div>
                     <p className="m-0 mb-1.5 text-xs2 text-t-body">{o.name}</p>
                     <div className="h-1 rounded-sm bg-table-line overflow-hidden mb-1">
-                      <div className={`h-full bg-accent rounded-sm w-[${o.target}%]`} />
+                      <div className="h-full bg-accent rounded-sm" style={{ width: `${o.target}%` }} />
                     </div>
                     <div className="flex justify-between">
                       <span className="text-2xs text-t-light">Output: {o.output.toLocaleString()}</span>

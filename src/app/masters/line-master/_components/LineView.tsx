@@ -1,6 +1,4 @@
-'use client'
-
-import ViewModal from '@/components/ui/ViewModal'
+﻿import ViewModal from '@/components/ui/ViewModal'
 import Badge from '@/components/ui/Badge'
 
 interface LineViewProps {

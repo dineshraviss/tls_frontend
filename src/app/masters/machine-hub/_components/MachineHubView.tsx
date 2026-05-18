@@ -45,7 +45,7 @@ export default function MachineHubView({ uuid, onClose, onEdit, onDelete }: Prop
 
   return (
     <div className="fixed inset-0 z-[9997] flex justify-end">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-[1] bg-modal w-full max-w-[680px] h-full flex flex-col shadow-2xl overflow-hidden">
 
         {/* Title bar */}

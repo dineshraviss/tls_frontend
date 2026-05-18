@@ -1,6 +1,4 @@
-'use client'
-
-import type { ValidationRules } from '@/lib/validation'
+﻿import type { ValidationRules } from '@/lib/validation'
 
 // ── Entity interfaces ──────────────────────────────────────────────────────────
 
