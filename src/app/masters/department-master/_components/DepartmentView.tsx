@@ -1,6 +1,4 @@
-'use client'
-
-import Badge from '@/components/ui/Badge'
+﻿import Badge from '@/components/ui/Badge'
 import ViewModal from '@/components/ui/ViewModal'
 
 interface DepartmentViewProps {

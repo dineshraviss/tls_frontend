@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { apiCall } from '@/services/apiClient'
@@ -106,18 +106,18 @@ export default function ShiftModifyForm({ shift, branches, allZones, onClose, on
       footer={
         <>
           <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" type="submit" form="shift-form" isLoading={saving}>
+          <Button variant="primary" type="submit" form="shift-modify-form" isLoading={saving}>
             {isEdit ? 'Update Shift' : 'Add Shift Modify'}
           </Button>
         </>
       }
     >
       {formError && (
-        <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-input text-xs text-red-700">
+        <div className="mb-3 px-3 py-2 border border-red-300 rounded-input text-xs text-red-600">
           {formError}
         </div>
       )}
-      <form id="shift-form" onSubmit={handleSubmit}>
+      <form id="shift-modify-form" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-0">
           {/* ── Left Column ── */}
           <div className="flex flex-col gap-3">

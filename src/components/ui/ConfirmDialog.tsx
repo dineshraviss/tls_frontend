@@ -29,7 +29,7 @@ export default function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-[9998] flex items-center justify-center">
       {/* Backdrop */}
-      <div onClick={onClose} className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/50" />
       {/* Dialog */}
       <div className="relative z-[1] bg-[var(--color-modal-bg)] rounded-card
         w-[calc(100vw-16px)] sm:w-[calc(100vw-32px)] max-w-[380px] shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-6"

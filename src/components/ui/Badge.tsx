@@ -1,6 +1,4 @@
-'use client'
-
-type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'default'
+﻿type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'default'
 
 const variants: Record<BadgeVariant, string> = {
   success: 'bg-success-bg text-success-text',

@@ -1,25 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Eye, MoreVertical, Search } from 'lucide-react'
+import { Trash2, Eye, MoreVertical, Search, Link2 } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import DataTable from '@/components/ui/DataTable'
 import type { LinkOrder } from './types'
 
-const SELECT_CLS =
-  'h-8 px-2.5 pr-7 text-xs bg-card border border-input-line rounded-input outline-none focus:border-accent text-t-body appearance-none cursor-pointer'
 
 interface OrderLinkListProps {
   data: LinkOrder[]
   loading: boolean
   search: string
-  status: string
   page: number
   perPage: number
   totalPages: number
   totalCount: number
   onSearchChange: (v: string) => void
-  onStatusChange: (v: string) => void
+  onLink: (row: LinkOrder) => void
   onView: (uuid: string) => void
   onDelete: (row: LinkOrder) => void
   onPageChange: (p: number) => void
@@ -27,8 +24,8 @@ interface OrderLinkListProps {
 }
 
 export default function OrderLinkList({
-  data, loading, search, status, page, perPage, totalPages, totalCount,
-  onSearchChange, onStatusChange, onView, onDelete, onPageChange, onPerPageChange,
+  data, loading, search, page, perPage, totalPages, totalCount,
+  onSearchChange, onLink, onView, onDelete, onPageChange, onPerPageChange,
 }: OrderLinkListProps) {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
@@ -82,6 +79,18 @@ export default function OrderLinkList({
       ),
     },
     {
+      key: 'link_action',
+      header: '',
+      render: (row: LinkOrder) => (
+        <button
+          onClick={() => onLink(row)}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-accent border border-accent/40 rounded hover:bg-accent/5 transition-colors whitespace-nowrap"
+        >
+          <Link2 size={11} /> Link
+        </button>
+      ),
+    },
+    {
       key: 'created_at',
       header: 'Created',
       render: (row: LinkOrder) => (
@@ -116,14 +125,6 @@ export default function OrderLinkList({
               placeholder="Search orders..."
               className="h-8 pl-8 pr-3 text-xs bg-input border border-input-line rounded-input outline-none focus:border-accent text-t-secondary w-44"
             />
-          </div>
-          <div className="relative">
-            <select value={status} onChange={e => onStatusChange(e.target.value)} className={SELECT_CLS}>
-              <option value="all">All</option>
-              <option value="linked">Linked</option>
-              <option value="unlinked">Unlinked</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-t-lighter text-xs">▾</span>
           </div>
         </div>
       </div>
