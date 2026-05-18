@@ -64,7 +64,7 @@ export default function DataTable<T>({
             ) : (
               data.map((row, i) => {
                 const r = row as Record<string, unknown>
-                const rowKey = (r.uuid as string) ?? String(r.id ?? i)
+                const rowKey = `${(r.uuid as string) ?? String(r.id ?? i)}_${i}`
                 return (
                 <tr
                   key={rowKey}
