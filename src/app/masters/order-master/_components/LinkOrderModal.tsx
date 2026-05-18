@@ -42,6 +42,8 @@ export default function LinkOrderModal({ row, onClose, onSuccess }: Props) {
       const res = await apiCall<{ success?: boolean; message?: string }>(
         '/order/linkorder',
         {
+          method: 'POST',
+          encrypt: false,
           payload: {
             order_no: String(row.order_no),
             colour: row.colour ?? '',
