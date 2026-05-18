@@ -97,7 +97,7 @@ export default function LoginPage() {
             <div className="text-center mb-5">
               <h1 className="m-0 mb-1.5 text-xl font-bold text-t-primary leading-tight">Login</h1>
               <p className="m-0 text-sm text-t-light leading-normal">
-                Enter your email below to login to your account
+                Enter your Employee ID or Email ID and password to login to your account
               </p>
             </div>
 

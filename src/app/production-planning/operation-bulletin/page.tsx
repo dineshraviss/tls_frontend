@@ -669,8 +669,8 @@ export default function OperationBulletinPage() {
                       <th className="px-3 py-2.5 text-left text-t-lighter font-medium">Operation</th>
                       <th className="px-3 py-2.5 text-right text-t-lighter font-medium w-20">SAM</th>
                       <th className="px-3 py-2.5 text-right text-t-lighter font-medium text-accent w-20">100%/Hr</th>
-                      <th className="px-3 py-2.5 text-right text-t-lighter font-medium w-20">Req<br/>Manni</th>
-                      <th className="px-3 py-2.5 text-right text-t-lighter font-medium w-24">Alloc</th>
+                      <th className="px-3 py-2.5 text-right text-t-lighter font-medium w-20">Req Manning</th>
+                      <th className="px-3 py-2.5 text-right text-t-lighter font-medium w-24">Allocated Manning</th>
                       <th className="px-3 py-2.5 text-right text-t-lighter font-medium">Alloc<br/>Manni 100 % HR</th>
                       <th className="px-2 py-2.5 w-8" />
                     </tr>

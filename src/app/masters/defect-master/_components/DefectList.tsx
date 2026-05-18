@@ -101,7 +101,7 @@ export default function DefectList({
     },
     {
       key: 'department',
-      header: 'Designation',
+      header: 'Department',
       render: (row: Defect) => (
         <span className="text-t-body text-xs">{row.department?.name ?? '—'}</span>
       ),
