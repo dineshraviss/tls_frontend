@@ -7,6 +7,7 @@ import { X, Pencil, Trash2 } from 'lucide-react'
 import { apiCall } from '@/services/apiClient'
 import { conditionLabel } from './types'
 import type { MachineSpec } from './types'
+import { formatDate } from '@/lib/formatDate'
 
 interface Props {
   uuid: string | null
@@ -34,13 +35,11 @@ export default function MachineHubView({ uuid, onClose, onEdit, onDelete }: Prop
 
   if (!uuid) return null
 
-  const fmt = (d: string | null | undefined) => (d ? d.slice(0, 10) : '—')
-
   const warrantyExpiry = (() => {
     if (!spec?.purchase_date || !spec.warranty) return '—'
     const d = new Date(spec.purchase_date)
     d.setFullYear(d.getFullYear() + spec.warranty)
-    return d.toISOString().slice(0, 10)
+    return formatDate(d.toISOString().slice(0, 10))
   })()
 
   return (
@@ -107,12 +106,12 @@ export default function MachineHubView({ uuid, onClose, onEdit, onDelete }: Prop
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5 px-5 py-4 rounded-xl border border-table-line bg-card-alt">
                   <p className="m-0 text-xs text-t-lighter">Last Service</p>
-                  <p className="m-0 text-lg font-semibold text-t-primary">{fmt(spec.last_oil_change)}</p>
+                  <p className="m-0 text-lg font-semibold text-t-primary">{formatDate(spec.last_oil_change)}</p>
                 </div>
                 <div className="flex flex-col gap-1.5 px-5 py-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/40">
                   <p className="m-0 text-xs text-amber-500 dark:text-amber-400">Next Service</p>
                   <p className="m-0 text-lg font-semibold text-amber-700 dark:text-amber-300">
-                    {fmt(spec.next_maintenance)}
+                    {formatDate(spec.next_maintenance)}
                   </p>
                 </div>
               </div>
@@ -134,7 +133,7 @@ export default function MachineHubView({ uuid, onClose, onEdit, onDelete }: Prop
                   ],
                   [
                     { label: 'Status', value: spec.is_active === 1 ? 'Active' : 'Inactive' },
-                    { label: 'Purchase Date', value: fmt(spec.purchase_date) },
+                    { label: 'Purchase Date', value: formatDate(spec.purchase_date) },
                     { label: 'Warranty Period', value: spec.warranty ? `${spec.warranty} Yrs` : '—' },
                     { label: 'Warranty Expiry', value: warrantyExpiry },
                   ],

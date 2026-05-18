@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Trash2, Eye, MoreVertical, Search, Link2 } from 'lucide-react'
+import { formatDate } from '@/lib/formatDate'
 import Badge from '@/components/ui/Badge'
 import DataTable from '@/components/ui/DataTable'
 import type { LinkOrder } from './types'
@@ -96,7 +97,7 @@ export default function OrderLinkList({
       key: 'created_at',
       header: 'Created',
       render: (row: LinkOrder) => (
-        <span className="text-2xs text-t-lighter">{row.created_at?.split(' ')[0] ?? '—'}</span>
+        <span className="text-2xs text-t-lighter">{formatDate(row.created_at)}</span>
       ),
     },
     {

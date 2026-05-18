@@ -1,5 +1,6 @@
 ﻿import ViewModal from '@/components/ui/ViewModal'
 import Badge from '@/components/ui/Badge'
+import { formatDate } from '@/lib/formatDate'
 
 interface ShiftModifyViewProps {
   viewData: Record<string, unknown> | null
@@ -27,7 +28,7 @@ export default function ShiftModifyView({ viewData, viewLoading, onClose }: Shif
         { label: 'Break', value: `${viewData.breakMins}m` },
         { label: 'Buffer Login', value: (viewData.start_buffer_time as string)?.slice(0, 5) ?? '—' },
         { label: 'Buffer Logout', value: (viewData.end_buffer_time as string)?.slice(0, 5) ?? '—' },
-        { label: 'Date', value: viewData.date as string ?? '—' },
+        { label: 'Date', value: formatDate(viewData.date as string) },
         { label: 'Lunch Start', value: (viewData.lunch_start as string)?.slice(0, 5) ?? '—' },
         { label: 'Lunch End', value: (viewData.lunch_end as string)?.slice(0, 5) ?? '—' },
         { label: 'Status', value: <Badge variant={viewData.is_active === 1 ? 'success' : 'default'}>{viewData.is_active === 1 ? 'Active' : 'Inactive'}</Badge> },

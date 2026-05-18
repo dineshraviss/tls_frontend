@@ -3,6 +3,7 @@
 import IconButton from '@/components/ui/IconButton'
 import { Pencil, Trash2, Eye } from 'lucide-react'
 import { PER_PAGE } from '@/lib/constants'
+import { formatDate } from '@/lib/formatDate'
 import DataTable from '@/components/ui/DataTable'
 import Toolbar from '@/components/ui/Toolbar'
 import Badge from '@/components/ui/Badge'
@@ -91,7 +92,7 @@ export default function EmployeeList({
       key: 'join_date',
       header: 'Join Date',
       render: (row: Employee) => (
-        <span className="text-t-body text-xs">{row.join_date}</span>
+        <span className="text-t-body text-xs">{formatDate(row.join_date)}</span>
       ),
     },
     {

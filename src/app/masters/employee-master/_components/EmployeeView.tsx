@@ -1,5 +1,6 @@
 ﻿import Badge from '@/components/ui/Badge'
 import ViewModal from '@/components/ui/ViewModal'
+import { formatDate } from '@/lib/formatDate'
 
 interface EmployeeViewProps {
   viewData: Record<string, unknown> | null
@@ -37,7 +38,7 @@ export default function EmployeeView({ viewData, viewLoading, onClose }: Employe
           label: 'Branch',
           value: (viewData.branch as Record<string, unknown>)?.branch_name as string ?? '—',
         },
-        { label: 'Join Date', value: viewData.join_date as string },
+        { label: 'Join Date', value: formatDate(viewData.join_date as string) },
         {
           label: 'Status',
           value: (
