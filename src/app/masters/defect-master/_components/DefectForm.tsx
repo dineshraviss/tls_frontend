@@ -34,7 +34,8 @@ export default function DefectForm({
 }: DefectFormProps) {
   const isEdit = !!defect
 
-  const matchedSeverity = severityOptions.find(
+  const safeOptions = Array.isArray(severityOptions) ? severityOptions : []
+  const matchedSeverity = safeOptions.find(
     o =>
       String(o.id) === String(defect?.severity ?? '') ||
       o.value.toLowerCase() === String(defect?.severity ?? '').toLowerCase()
@@ -171,7 +172,7 @@ export default function DefectForm({
                 setErrors(er => ({ ...er, severity: e.target.value ? '' : 'Severity is required' }))
             }}
             onBlur={() => handleBlur('severity')}
-            options={severityOptions.map(o => ({ value: o.id, label: o.value }))}
+            options={safeOptions.map(o => ({ value: o.id, label: o.value }))}
             placeholder="Select severity"
             error={errors.severity}
             touched={touched.severity}

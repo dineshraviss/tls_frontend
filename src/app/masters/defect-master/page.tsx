@@ -39,7 +39,10 @@ export default function DefectMasterPage() {
       '/dropdown/options-dropdown',
       { method: 'GET', encrypt: false, payload: { type: 'severity' } }
     )
-      .then(res => setSeverityOptions(res.data?.records ?? []))
+      .then(res => {
+        const records = res.data?.records
+        setSeverityOptions(Array.isArray(records) ? records : [])
+      })
       .catch(() => {})
   }, [])
 
