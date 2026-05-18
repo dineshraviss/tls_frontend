@@ -32,7 +32,9 @@ export default function OrderLinkList({
 
   const openMenu = (e: React.MouseEvent<HTMLButtonElement>, id: number) => {
     const rect = e.currentTarget.getBoundingClientRect()
-    setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    const spaceBelow = window.innerHeight - rect.bottom
+    const top = spaceBelow < 84 ? rect.top - 84 - 4 : rect.bottom + 4
+    setMenuPos({ top, right: window.innerWidth - rect.right })
     setOpenMenuId(id)
   }
 

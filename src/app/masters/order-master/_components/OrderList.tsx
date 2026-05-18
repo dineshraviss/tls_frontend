@@ -41,7 +41,9 @@ export default function OrderList({
 
   const openMenu = (e: React.MouseEvent<HTMLButtonElement>, id: number) => {
     const rect = e.currentTarget.getBoundingClientRect()
-    setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    const spaceBelow = window.innerHeight - rect.bottom
+    const top = spaceBelow < 112 ? rect.top - 112 - 4 : rect.bottom + 4
+    setMenuPos({ top, right: window.innerWidth - rect.right })
     setOpenMenuId(id)
   }
 
