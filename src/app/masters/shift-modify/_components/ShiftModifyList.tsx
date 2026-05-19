@@ -1,6 +1,7 @@
 'use client'
 
 import { Eye, Pencil, Trash2 } from 'lucide-react'
+import { formatDate } from '@/lib/formatDate'
 import AdvancedTable, { type AdvancedColumn, type ActionItem } from '@/components/ui/AdvancedTable'
 import Toolbar from '@/components/ui/Toolbar'
 import Badge from '@/components/ui/Badge'
@@ -68,6 +69,7 @@ export default function ShiftModifyList({
       key: 'factory',
       header: 'Factory',
       sortable: true,
+      sortValue: (row) => row.branch?.branch_name ?? '',
       render: (row) => (
         <div>
           <span className="text-t-secondary block font-medium">{row.branch?.branch_name ?? '—'}</span>
@@ -79,6 +81,7 @@ export default function ShiftModifyList({
       key: 'shift_name',
       header: 'Shift Name',
       sortable: true,
+      sortValue: (row) => row.shift_name ?? '',
       render: (row) => <span className="text-accent font-medium">{row.shift_name}</span>,
     },
     {
@@ -95,7 +98,7 @@ export default function ShiftModifyList({
     { key: 'hrs', header: 'Hrs', render: (row) => <span className="text-t-body font-semibold">{row.hrs}h</span> },
     { key: 'breakMins', header: 'Break', render: (row) => <span className="text-t-body">{row.breakMins}m</span> },
     { key: 'buffer', header: 'Buffer ti...', render: (row) => <span className="text-t-body">{row.start_buffer_time?.slice(0, 5) ?? '—'}</span> },
-    { key: 'date', header: 'Date', render: (row) => <span className="text-t-body text-xs">{row.date ?? '—'}</span> },
+    { key: 'date', header: 'Date', render: (row) => <span className="text-t-body text-xs">{formatDate(row.date)}</span> },
     { key: 'status', header: 'Status', render: (row) => <Badge variant={row.is_active === 1 ? 'success' : 'default'}>{row.is_active === 1 ? 'Active' : 'Inactive'}</Badge> },
   ]
 

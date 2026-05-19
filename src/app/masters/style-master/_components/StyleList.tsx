@@ -5,8 +5,7 @@ import Badge from '@/components/ui/Badge'
 import DataTable from '@/components/ui/DataTable'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
-import { Pencil, Trash2, Eye, Download, ChevronDown, Plus } from 'lucide-react'
-import { Search } from 'lucide-react'
+import { Pencil, Trash2, Eye, Download, ChevronDown, Plus, Search } from 'lucide-react'
 import type { Style } from './types'
 
 interface Props {

@@ -126,7 +126,7 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
         )}
         <div className="flex items-center gap-1.5">
           {getBreadcrumbs(pathname).map((crumb, i) => (
-            <span key={i} className="flex items-center gap-1.5">
+            <span key={crumb.text} className="flex items-center gap-1.5">
               {i > 0 && <span className="text-xs text-t-lighter">&rsaquo;</span>}
               <span className={`${isMobile ? 'text-sm' : 'text-md'} ${crumb.active ? 'font-bold text-t-primary' : 'font-normal text-t-lighter'}`}>
                 {crumb.text}
@@ -154,8 +154,8 @@ export default function Header({ isMobile, onMenuToggle }: HeaderProps) {
         </button>
 
         {/* Icon buttons */}
-        {(isMobile ? [Bell] : [Lock, Settings, Bell]).map((Icon, i) => (
-          <button key={i} className="bg-transparent border-none cursor-pointer p-1 text-t-body hover:text-t-primary flex items-center transition-colors">
+        {(isMobile ? [Bell] : [Lock, Settings, Bell]).map((Icon) => (
+          <button key={Icon.displayName} className="bg-transparent border-none cursor-pointer p-1 text-t-body hover:text-t-primary flex items-center transition-colors">
             <Icon size={17} />
           </button>
         ))}

@@ -86,7 +86,7 @@ export default function OperationView({ viewData, viewLoading, onClose }: Operat
               ) : (
                 <div className="flex flex-col gap-2">
                   {defects.map((d, i) => (
-                    <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-card border border-table-line bg-card">
+                    <div key={d.code} className="flex items-center gap-3 px-4 py-3 rounded-card border border-table-line bg-card">
                       <span className="text-xs font-mono font-semibold text-t-lighter shrink-0">{d.code}</span>
                       <span className="text-sm2 text-t-body truncate">{d.defect_name}</span>
                     </div>

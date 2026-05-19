@@ -52,7 +52,9 @@ export default function DefectList({
 
   const openMenu = (e: React.MouseEvent<HTMLButtonElement>, id: number) => {
     const rect = e.currentTarget.getBoundingClientRect()
-    setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    const spaceBelow = window.innerHeight - rect.bottom
+    const top = spaceBelow < 84 ? rect.top - 84 - 4 : rect.bottom + 4
+    setMenuPos({ top, right: window.innerWidth - rect.right })
     setOpenMenuId(id)
   }
 
@@ -99,7 +101,7 @@ export default function DefectList({
     },
     {
       key: 'department',
-      header: 'Designation',
+      header: 'Department',
       render: (row: Defect) => (
         <span className="text-t-body text-xs">{row.department?.name ?? '—'}</span>
       ),

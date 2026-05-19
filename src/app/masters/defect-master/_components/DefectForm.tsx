@@ -34,7 +34,8 @@ export default function DefectForm({
 }: DefectFormProps) {
   const isEdit = !!defect
 
-  const matchedSeverity = severityOptions.find(
+  const safeOptions = Array.isArray(severityOptions) ? severityOptions : []
+  const matchedSeverity = safeOptions.find(
     o =>
       String(o.id) === String(defect?.severity ?? '') ||
       o.value.toLowerCase() === String(defect?.severity ?? '').toLowerCase()
@@ -47,8 +48,8 @@ export default function DefectForm({
     escalation_flag: (defect?.escalation_flag ?? 0) === 1,
     department_id: defect?.department_id?.toString() ?? '',
     caps: defect?.caps?.length
-      ? defect.caps.map(c => ({ cap_name: c.cap_name, short_name: c.short_name ?? '', notes: c.notes ?? '' }))
-      : [{ cap_name: '', short_name: '', notes: '' }],
+      ? defect.caps.map((c, i) => ({ cap_name: c.cap_name, short_name: c.short_name ?? '', notes: c.notes ?? '', _key: c.id?.toString() ?? `cap-${i}` }))
+      : [{ cap_name: '', short_name: '', notes: '', _key: 'cap-0' }],
   })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -71,7 +72,7 @@ export default function DefectForm({
     setErrors(e => ({ ...e, [key]: validateField(form[key], rules[key]) }))
   }
 
-  const addCap = () => setForm(f => ({ ...f, caps: [...f.caps, { cap_name: '', short_name: '', notes: '' }] }))
+  const addCap = () => setForm(f => ({ ...f, caps: [...f.caps, { cap_name: '', short_name: '', notes: '', _key: `cap-${Date.now()}` }] }))
   const removeCap = (i: number) => setForm(f => ({ ...f, caps: f.caps.filter((_, idx) => idx !== i) }))
   const setCap = (i: number, field: keyof Cap, val: string) =>
     setForm(f => ({ ...f, caps: f.caps.map((c, idx) => (idx === i ? { ...c, [field]: val } : c)) }))
@@ -171,7 +172,7 @@ export default function DefectForm({
                 setErrors(er => ({ ...er, severity: e.target.value ? '' : 'Severity is required' }))
             }}
             onBlur={() => handleBlur('severity')}
-            options={severityOptions.map(o => ({ value: o.id, label: o.value }))}
+            options={safeOptions.map(o => ({ value: o.id, label: o.value }))}
             placeholder="Select severity"
             error={errors.severity}
             touched={touched.severity}
@@ -221,7 +222,7 @@ export default function DefectForm({
           <label className="text-xs font-medium text-t-body">Corrective Action Plan (CAP)</label>
           {form.caps.map((cap, i) => (
             <div
-              key={i}
+              key={cap._key ?? `cap-${i}`}
               className="flex flex-col gap-2 p-3 rounded-card border border-table-line bg-card-alt relative"
             >
               <div className="flex items-center justify-between mb-0.5">

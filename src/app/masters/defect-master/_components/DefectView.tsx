@@ -150,7 +150,7 @@ export default function DefectView({ viewData, viewLoading, onClose, onAddCap }:
                 )}
                 {caps.map((cap, i) => (
                   <div
-                    key={i}
+                    key={cap.cap_name || cap.id}
                     className="flex items-center justify-between px-4 py-3 rounded-card border border-table-line bg-card"
                   >
                     <div className="flex items-center gap-3 min-w-0">

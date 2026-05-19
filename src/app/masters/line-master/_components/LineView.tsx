@@ -32,7 +32,7 @@ export default function LineView({ viewData, viewLoading, onClose }: LineViewPro
         {
           label: 'Slots',
           value: (viewData.slots as Array<Record<string, unknown>>)?.map((s, i) => (
-            <div key={i} className="text-xs2 mb-1">
+            <div key={String(s.slot_name)} className="text-xs2 mb-1">
               <span className="font-medium">{s.slot_name as string}:</span>{' '}
               {(s.start as string)?.slice(0, 5)} - {(s.end as string)?.slice(0, 5)}
             </div>

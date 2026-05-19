@@ -114,7 +114,7 @@ export default function OrderView({ viewData, viewLoading, onClose }: OrderViewP
                   <tbody>
                     {orderSizes.map((s, idx) => (
                       <tr
-                        key={idx}
+                        key={String(s.size)}
                         className={`border-t border-table-line ${idx % 2 === 0 ? 'bg-card' : 'bg-card-alt'}`}
                       >
                         <td className="px-3 py-2 font-semibold text-accent">{String(s.size ?? '')}</td>

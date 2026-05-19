@@ -121,10 +121,14 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
     >
       {/* Logo */}
       <div className="px-5 h-14 flex items-center gap-2.5 shrink-0 justify-between border-b border-sidebar-line">
-        <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => router.push('/dashboard')}
+          className="flex items-center gap-2.5 bg-transparent border-none cursor-pointer p-0"
+        >
           <Image src="/logo.png" alt="" width={30} height={30} />
           <span className="text-brand font-bold text-md tracking-wide">iQ2 TLS</span>
-        </div>
+        </button>
         {isMobile && (
           <button onClick={onClose} className="bg-transparent border-none cursor-pointer p-1 flex items-center text-t-lighter">
             <X size={16} />

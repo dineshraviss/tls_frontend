@@ -117,7 +117,7 @@ export default function DashboardPage() {
               {recentOrders.map((o, i) => {
                 const isApproved = o.status === 'Approved'
                 return (
-                  <div key={i} className={`border border-header-line rounded-md p-2.5 ${isMobile ? 'flex-shrink-0 w-40' : 'flex-1'} min-w-0`}>
+                  <div key={`${o.id}-${o.name}-${o.status}`} className={`border border-header-line rounded-md p-2.5 ${isMobile ? 'flex-shrink-0 w-40' : 'flex-1'} min-w-0`}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-xs2 font-semibold text-t-secondary">{o.id}</span>
                       <Badge variant={isApproved ? 'success' : 'warning'}>{o.status}</Badge>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {liveStatusRows.map((row, i) => (
-                    <tr key={i} className="border-b border-table-line">
+                    <tr key={row.ws} className="border-b border-table-line">
                       <td className="px-2.5 py-2 text-t-secondary font-medium">{row.ws}</td>
                       <td className="px-2.5 py-2 text-t-body">{row.tlsId}</td>
                       <td className="px-2.5 py-2 text-t-body">{row.operation}</td>
@@ -221,7 +221,7 @@ export default function DashboardPage() {
                 : 'flex flex-col'}
             >
               {setupItems.map((item, i) => (
-                <div key={i} className={`flex justify-between items-center py-cell-py-sm ${i < setupItems.length - 1 ? 'border-b border-table-line' : ''}`}>
+                <div key={item.label} className={`flex justify-between items-center py-cell-py-sm ${i < setupItems.length - 1 ? 'border-b border-table-line' : ''}`}>
                   <span className="text-xs text-t-body">{item.label}</span>
                   <span className="text-xs font-semibold text-t-secondary bg-table-line rounded px-[7px] py-px min-w-[24px] text-center">
                     {item.count}

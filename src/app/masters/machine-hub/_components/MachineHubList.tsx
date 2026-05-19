@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import { Search, Plus, Pencil, Trash2, QrCode, ArrowRight, MoreVertical } from 'lucide-react'
 import { conditionLabel } from './types'
 import type { MachineTypeGroup, MachineTypeItem, MachineSpec } from './types'
+import { formatDate } from '@/lib/formatDate'
 
 interface Props {
   // Left panel
@@ -205,10 +206,10 @@ export default function MachineHubList({
                     <table className="w-full border-collapse text-sm2">
                       <thead>
                         <tr className="bg-table-head">
-                          {['M - No.', 'Brand', 'Model No', 'Serial No', 'Condition', 'Next Maint.', 'Branch', 'Status', ''].map(
-                            (h, i) => (
+                          {['M - No.', 'Brand', 'Model No', 'Serial No', 'Condition', 'Next Maint.', 'Branch', 'Status', 'action'].map(
+                            (h) => (
                               <th
-                                key={i}
+                                key={h}
                                 className="px-3.5 py-2.5 text-left font-semibold text-xs text-t-light border-b border-header-line whitespace-nowrap"
                               >
                                 {h}
@@ -230,7 +231,7 @@ export default function MachineHubList({
                             <td className="px-3.5 py-2.5 text-t-body">
                               {spec.conditionInfo?.value ?? conditionLabel(String(spec.condition))}
                             </td>
-                            <td className="px-3.5 py-2.5 text-t-body text-xs">{spec.next_maintenance ?? '—'}</td>
+                            <td className="px-3.5 py-2.5 text-t-body text-xs">{formatDate(spec.next_maintenance)}</td>
                             <td className="px-3.5 py-2.5 text-t-body text-xs">{spec.branch?.branch_name ?? '—'}</td>
                             <td className="px-3.5 py-2.5">
                               <Badge variant={spec.is_active === 1 ? 'success' : 'default'}>

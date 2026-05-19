@@ -13,6 +13,7 @@ import { orderRules } from './types'
 interface SizeRow {
   size: string
   ord_qty: string
+  _key: string
 }
 
 interface OrderFormProps {
@@ -41,8 +42,8 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
 
   const [sizeRows, setSizeRows] = useState<SizeRow[]>(
     order?.orderSizes?.length
-      ? order.orderSizes.map(s => ({ size: s.size, ord_qty: String(s.ord_qty) }))
-      : [{ size: '', ord_qty: '' }]
+      ? order.orderSizes.map((s, i) => ({ size: s.size, ord_qty: String(s.ord_qty), _key: s.id?.toString() ?? `row-${i}` }))
+      : [{ size: '', ord_qty: '', _key: 'row-0' }]
   )
 
   const [colours, setColours] = useState<string[]>([])
@@ -108,7 +109,7 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
 
   // ── Size rows ───────────────────────────────────────────────────────────────────
   const addRow = () =>
-    setSizeRows(prev => [...prev, { size: '', ord_qty: form.order_qty }])
+    setSizeRows(prev => [...prev, { size: '', ord_qty: form.order_qty, _key: `row-${Date.now()}` }])
 
   const removeRow = (i: number) =>
     setSizeRows(prev => prev.filter((_, idx) => idx !== i))
@@ -309,7 +310,7 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
                 {sizeRows.map((row, i) => {
                   const prodQty = calcProdQty(row.ord_qty, form.prod_per)
                   return (
-                    <tr key={i} className={`border-t border-table-line ${i % 2 === 0 ? 'bg-card' : 'bg-card-alt'}`}>
+                    <tr key={row._key} className={`border-t border-table-line ${i % 2 === 0 ? 'bg-card' : 'bg-card-alt'}`}>
                       {/* Size */}
                       <td className="px-2 py-1.5">
                         <input

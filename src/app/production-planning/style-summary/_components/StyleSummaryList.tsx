@@ -59,9 +59,9 @@ export default function StyleSummaryList({ data, loading, search, onSearchChange
           <tbody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-t border-table-line">
+                <tr key={`skel-row-${i}`} className="border-t border-table-line">
                   {Array.from({ length: 14 }).map((_, j) => (
-                    <td key={j} className="px-3 py-2.5">
+                    <td key={`skel-cell-${j}`} className="px-3 py-2.5">
                       <div className="h-3.5 bg-table-head rounded animate-pulse" />
                     </td>
                   ))}

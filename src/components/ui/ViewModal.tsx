@@ -25,7 +25,7 @@ export default function ViewModal({ title, fields, loading = false, onClose, siz
       ) : (
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           {fields.map((field, i) => (
-            <div key={i} className={field.fullWidth ? 'col-span-2' : ''}>
+            <div key={field.label} className={field.fullWidth ? 'col-span-2' : ''}>
               <p className="m-0 mb-0.5 text-2xs text-t-lighter font-semibold uppercase tracking-wider">
                 {field.label}
               </p>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { ArrowUpDown, MoreVertical } from 'lucide-react'
 import Pagination from './Pagination'
 import { PER_PAGE } from '@/lib/constants'
@@ -10,6 +10,7 @@ export interface AdvancedColumn<T> {
   key: string
   header: string
   sortable?: boolean
+  sortValue?: (row: T) => string | number
   render: (row: T, index: number) => React.ReactNode
   className?: string
 }
@@ -50,6 +51,7 @@ export default function AdvancedTable<T>({
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
   const menuRef = useRef<HTMLDivElement>(null)
 
   const totalCols = (selectable ? 1 : 0) + columns.length + (actions ? 1 : 0)
@@ -76,16 +78,17 @@ export default function AdvancedTable<T>({
     onSort?.(key, newDir)
   }
 
-  // Close action menu on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenMenu(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+  const sortedData = useMemo(() => {
+    if (!sortKey) return data
+    const col = columns.find(c => c.key === sortKey)
+    return [...data].sort((a, b) => {
+      const av = col?.sortValue ? col.sortValue(a) : ((a as Record<string, unknown>)[sortKey] ?? '')
+      const bv = col?.sortValue ? col.sortValue(b) : ((b as Record<string, unknown>)[sortKey] ?? '')
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [data, sortKey, sortDir, columns])
 
   return (
     <div className="bg-card rounded-card shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden border border-header-line">
@@ -139,10 +142,10 @@ export default function AdvancedTable<T>({
           <tbody>
             {loading ? (
               <tr><td colSpan={totalCols} className="p-8 text-center text-t-lighter text-sm">Loading...</td></tr>
-            ) : data.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <tr><td colSpan={totalCols} className="p-8 text-center text-t-lighter text-sm">{emptyMessage}</td></tr>
             ) : (
-              data.map((row, i) => {
+              sortedData.map((row, i) => {
                 const key = rowKey(row)
                 const isChecked = selected.includes(key)
                 return (
@@ -177,29 +180,21 @@ export default function AdvancedTable<T>({
 
                     {/* Actions - 3 dot menu */}
                     {actions && (
-                      <td className="px-3 py-cell-py relative">
+                      <td className="px-3 py-cell-py">
                         <button
-                          onClick={() => setOpenMenu(openMenu === key ? null : key)}
+                          onClick={e => {
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            const itemCount = actions(row).length
+                            const menuH = itemCount * 36
+                            const spaceBelow = window.innerHeight - rect.bottom
+                            const top = spaceBelow < menuH + 4 ? rect.top - menuH - 4 : rect.bottom + 4
+                            setMenuPos({ top, right: window.innerWidth - rect.right })
+                            setOpenMenu(openMenu === key ? null : key)
+                          }}
                           className="bg-transparent border-none cursor-pointer p-1 text-t-lighter hover:text-t-light flex select-none"
                         >
                           <MoreVertical size={16} />
                         </button>
-                        {openMenu === key && (
-                          <div ref={menuRef} className="absolute right-4 top-full z-50 bg-card rounded-lg shadow-lg border border-header-line overflow-hidden min-w-[120px]">
-                            {actions(row).map((action, ai) => (
-                              <button
-                                key={ai}
-                                onClick={() => { action.onClick(); setOpenMenu(null) }}
-                                className={`w-full px-3 py-2 bg-transparent border-none cursor-pointer flex items-center gap-2 text-sm font-inherit select-none
-                                  ${action.variant === 'danger'
-                                    ? 'text-danger hover:bg-error-bg'
-                                    : 'text-t-body hover:bg-table-head'}`}
-                              >
-                                {action.icon} {action.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </td>
                     )}
                   </tr>
@@ -209,6 +204,36 @@ export default function AdvancedTable<T>({
           </tbody>
         </table>
       </div>
+
+      {/* Fixed-position action dropdown — escapes overflow:hidden */}
+      {openMenu !== null && actions && (() => {
+        const row = sortedData.find(r => rowKey(r) === openMenu)
+        if (!row) return null
+        const items = actions(row)
+        return (
+          <>
+            <div className="fixed inset-0 z-[9990]" onClick={() => setOpenMenu(null)} />
+            <div
+              ref={menuRef}
+              className="fixed z-[9991] bg-modal border border-table-line rounded-card shadow-lg py-1 min-w-[130px]"
+              style={{ top: menuPos.top, right: menuPos.right }}
+            >
+              {items.map((action, ai) => (
+                <button
+                  key={ai}
+                  onClick={() => { action.onClick(); setOpenMenu(null) }}
+                  className={`w-full px-3 py-2 bg-transparent border-none cursor-pointer flex items-center gap-2 text-xs font-inherit select-none
+                    ${action.variant === 'danger'
+                      ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20'
+                      : 'text-t-body hover:bg-card-alt'}`}
+                >
+                  {action.icon} {action.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )
+      })()}
 
       {/* Pagination */}
       {onPageChange ? (

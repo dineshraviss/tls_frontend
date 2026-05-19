@@ -49,6 +49,7 @@ export interface FormSlot {
   slot_name: string
   start_time: string
   end_time: string
+  _key?: string
 }
 
 export interface FormErrors {

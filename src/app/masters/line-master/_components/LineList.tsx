@@ -63,12 +63,14 @@ export default function LineList({
       key: 'zone',
       header: 'Zone',
       sortable: true,
+      sortValue: (row) => row.zone?.zone_name ?? '',
       render: (row) => <span className="text-t-body">{row.zone?.zone_name ?? '—'}</span>,
     },
     {
       key: 'line_name',
       header: 'Line',
       sortable: true,
+      sortValue: (row) => row.line_name ?? '',
       render: (row) => <span className="text-t-body font-medium">{row.line_name}</span>,
     },
     ...([1, 2, 3, 4, 5].map(n => ({

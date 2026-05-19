@@ -62,9 +62,12 @@ export default function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              data.map((row, i) => (
+              data.map((row, i) => {
+                const r = row as Record<string, unknown>
+                const rowKey = `${(r.uuid as string) ?? String(r.id ?? i)}_${i}`
+                return (
                 <tr
-                  key={i}
+                  key={rowKey}
                   className={`border-b border-table-line
                     ${i % 2 === 0 ? 'bg-card' : 'bg-card-alt'}`}
                 >
@@ -74,7 +77,8 @@ export default function DataTable<T>({
                     </td>
                   ))}
                 </tr>
-              ))
+                )
+              })
             )}
           </tbody>
         </table>

@@ -68,6 +68,7 @@ export default function ShiftMasterList({
       key: 'factory',
       header: 'Factory',
       sortable: true,
+      sortValue: (row) => row.branch?.branch_name ?? '',
       render: (row) => (
         <div>
           <span className="text-t-secondary block font-medium">{row.branch?.branch_name ?? '—'}</span>
@@ -79,6 +80,7 @@ export default function ShiftMasterList({
       key: 'shift_name',
       header: 'Shift Name',
       sortable: true,
+      sortValue: (row) => row.shift_name ?? '',
       render: (row) => <span className="text-accent font-medium">{row.shift_name}</span>,
     },
     {
